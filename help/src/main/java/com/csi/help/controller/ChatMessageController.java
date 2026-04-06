@@ -28,6 +28,7 @@ public class  ChatMessageController {
                                              @RequestAttribute("userId") String senderId) {
         message.setSenderId(senderId);
         ChatMessage savedMessage = chatMessageService.sendMessage(message);
+
         return Result.success(savedMessage);
     }
 
