@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.csi.help.mapper.VolunteerOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.csi.help.entity.VolunteerOrder">
+        <id column="id" property="id"/>
+        <result column="request_id" property="requestId"/>
+        <result column="volunteer_id" property="volunteerId"/>
+        <result column="volunteer_name" property="volunteerName"/>
+        <result column="help_seeker_id" property="helpSeekerId"/>
+        <result column="help_seeker_name" property="helpSeekerName"/>
+        <result column="help_seeker_phone" property="helpSeekerPhone"/>
+        <result column="type" property="type"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="location" property="location"/>
+        <result column="latitude" property="latitude"/>
+        <result column="longitude" property="longitude"/>
+        <result column="status" property="status"/>
+        <result column="accepted_at" property="acceptedAt"/>
+        <result column="started_at" property="startedAt"/>
+        <result column="completed_at" property="completedAt"/>
+        <result column="estimated_duration" property="estimatedDuration"/>
+        <result column="actual_duration" property="actualDuration"/>
+        <result column="distance" property="distance"/>
+        <result column="rating" property="rating"/>
+        <result column="feedback" property="feedback"/>
+        <result column="images" property="images"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.csi.help.entity.VolunteerOrder">
+        INSERT INTO volunteer_orders (
+            id, request_id, volunteer_id, volunteer_name, help_seeker_id, help_seeker_name, 
+            help_seeker_phone, type, title, description, location, status, accepted_at, 
+            created_at, updated_at
+        )
+        VALUES (
+            #{id}, #{requestId}, #{volunteerId}, #{volunteerName}, #{helpSeekerId}, #{helpSeekerName},
+            #{helpSeekerPhone}, #{type}, #{title}, #{description}, #{location}, #{status}, #{acceptedAt},
+            NOW(), NOW()
+        )
+    </insert>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM volunteer_orders WHERE id = #{id}
+    </select>
+
+    <select id="findByRequestId" resultMap="BaseResultMap">
+        SELECT * FROM volunteer_orders WHERE request_id = #{requestId}
+    </select>
+
+    <select id="findByVolunteerId" resultMap="BaseResultMap">
+        SELECT * FROM volunteer_orders
+        WHERE volunteer_id = #{volunteerId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="countByVolunteerId" resultType="long">
+        SELECT COUNT(*) FROM volunteer_orders
+        WHERE volunteer_id = #{volunteerId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <select id="findByVolunteerIdPage" resultMap="BaseResultMap">
+        SELECT * FROM volunteer_orders
+        WHERE volunteer_id = #{volunteerId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <update id="updateSeekerRating">
+        UPDATE volunteer_orders
+        SET rating = #{rating}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="sumActualDurationMinutes" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(actual_duration), 0)
+        FROM volunteer_orders
+        WHERE volunteer_id = #{volunteerId}
+          AND status = 'completed'
+          AND actual_duration IS NOT NULL
+    </select>
+
+    <update id="update" parameterType="com.csi.help.entity.VolunteerOrder">
+        UPDATE volunteer_orders
+        SET status = #{status},
+            feedback = #{feedback},
+            completed_at = #{completedAt},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE volunteer_orders
+        SET status = #{status},
+            started_at = CASE
+                WHEN #{status} = 'in-progress' AND started_at IS NULL THEN NOW()
+                ELSE started_at
+            END,
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="complete">
+        UPDATE volunteer_orders
+        SET status = 'completed',
+            completed_at = NOW(),
+            feedback = #{feedback},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="countCompletedBetween" resultType="long">
+        SELECT COUNT(*) FROM volunteer_orders
+        WHERE status = 'completed'
+          AND completed_at IS NOT NULL
+          AND completed_at &gt;= #{start}
+          AND completed_at &lt; #{end}
+    </select>
+
+    <select id="countDistinctVolunteersCompletedBetween" resultType="long">
+        SELECT COUNT(DISTINCT volunteer_id) FROM volunteer_orders
+        WHERE status = 'completed'
+          AND completed_at IS NOT NULL
+          AND completed_at &gt;= #{start}
+          AND completed_at &lt; #{end}
+    </select>
+
+    <select id="countCompletedOnLocalDate" resultType="long">
+        SELECT COUNT(*) FROM volunteer_orders
+        WHERE status = 'completed'
+          AND completed_at IS NOT NULL
+          AND DATE(completed_at) = #{day}
+    </select>
+
+    <select id="volunteerCompletedCountsBetween" resultType="java.util.HashMap">
+        SELECT volunteer_id AS volunteerId,
+               volunteer_name AS volunteerName,
+               COUNT(*) AS cnt
+        FROM volunteer_orders
+        WHERE status = 'completed'
+          AND completed_at IS NOT NULL
+          AND completed_at &gt;= #{start}
+          AND completed_at &lt; #{end}
+        GROUP BY volunteer_id, volunteer_name
+        ORDER BY cnt DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findDistinctCompletedTypesByVolunteer" resultType="string">
+        SELECT DISTINCT type FROM volunteer_orders
+        WHERE volunteer_id = #{volunteerId}
+          AND status = 'completed'
+    </select>
+
+</mapper>

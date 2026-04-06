@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.csi.help.mapper.UserLocationMapper">
+
+    <resultMap id="UserLocationResultMap" type="com.csi.help.entity.UserLocation">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="latitude" column="latitude"/>
+        <result property="longitude" column="longitude"/>
+        <result property="address" column="address"/>
+        <result property="source" column="source"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT INTO user_locations (id, user_id, latitude, longitude, address, source, created_at)
+        VALUES (#{id}, #{userId}, #{latitude}, #{longitude}, #{address}, #{source}, NOW())
+    </insert>
+
+    <update id="update">
+        UPDATE user_locations
+        SET latitude = #{latitude}, longitude = #{longitude},
+            address = #{address}, source = #{source}, created_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <select id="findByUserId" resultMap="UserLocationResultMap">
+        SELECT * FROM user_locations WHERE user_id = #{userId}
+    </select>
+</mapper>

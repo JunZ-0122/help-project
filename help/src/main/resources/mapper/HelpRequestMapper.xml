@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.csi.help.mapper.HelpRequestMapper">
+    
+    <resultMap id="HelpRequestResultMap" type="com.csi.help.entity.HelpRequest">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="userPhone" column="user_phone"/>
+        <result property="type" column="type"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="location" column="location"/>
+        <result property="latitude" column="latitude"/>
+        <result property="longitude" column="longitude"/>
+        <result property="urgency" column="urgency"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="scheduledTime" column="scheduled_time"/>
+        <result property="estimatedDuration" column="estimated_duration"/>
+        <result property="images" column="images"/>
+        <result property="volunteerId" column="volunteer_id"/>
+        <result property="volunteerName" column="volunteer_name"/>
+        <result property="completedAt" column="completed_at"/>
+        <result property="rating" column="rating"/>
+        <result property="feedback" column="feedback"/>
+    </resultMap>
+    
+    <insert id="insert">
+        INSERT INTO help_requests (
+            id, user_id, user_name, user_phone, type, title, description,
+            location, latitude, longitude, urgency, status, created_at,
+            scheduled_time, estimated_duration, images
+        ) VALUES (
+            #{id}, #{userId}, #{userName}, #{userPhone}, #{type}, #{title}, #{description},
+            #{location}, #{latitude}, #{longitude}, #{urgency}, #{status}, #{createdAt},
+            #{scheduledTime}, #{estimatedDuration}, #{images}
+        )
+    </insert>
+    
+    <select id="findById" resultMap="HelpRequestResultMap">
+        SELECT * FROM help_requests WHERE id = #{id}
+    </select>
+    
+    <select id="findByPage" resultMap="HelpRequestResultMap">
+        SELECT * FROM help_requests
+        <where>
+            <if test="type != null">AND type = #{type}</if>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="urgency != null">AND urgency = #{urgency}</if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+    
+    <select id="countByCondition" resultType="long">
+        SELECT COUNT(*) FROM help_requests
+        <where>
+            <if test="type != null">AND type = #{type}</if>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="urgency != null">AND urgency = #{urgency}</if>
+        </where>
+    </select>
+    
+    <select id="findByUserId" resultMap="HelpRequestResultMap">
+        SELECT * FROM help_requests
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="findRecentByUserId" resultMap="HelpRequestResultMap">
+        SELECT * FROM help_requests
+        WHERE user_id = #{userId}
+        ORDER BY COALESCE(updated_at, created_at) DESC, created_at DESC
+        LIMIT #{limit}
+    </select>
+    
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*) FROM help_requests WHERE user_id = #{userId}
+    </select>
+    
+    <update id="update">
+        UPDATE help_requests
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="latitude != null">latitude = #{latitude},</if>
+            <if test="longitude != null">longitude = #{longitude},</if>
+            <if test="urgency != null">urgency = #{urgency},</if>
+            <if test="scheduledTime != null">scheduled_time = #{scheduledTime},</if>
+            <if test="images != null">images = #{images},</if>
+            updated_at = #{updatedAt}
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <update id="updateStatus">
+        UPDATE help_requests SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <update id="assignVolunteer">
+        UPDATE help_requests
+        SET volunteer_id = #{volunteerId},
+            volunteer_name = #{volunteerName},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <update id="delete">
+        UPDATE help_requests SET status = 'cancelled', updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <select id="findAll" resultMap="HelpRequestResultMap">
+        SELECT * FROM help_requests
+        <where>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+    
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM help_requests
+        <where>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <select id="findAllCommunity" resultMap="HelpRequestResultMap">
+        SELECT * FROM help_requests
+        <where>
+            <choose>
+                <when test="listScope == 'pending'">
+                    AND status = 'pending'
+                </when>
+                <when test="listScope == 'assigned_open'">
+                    AND status IN ('assigned', 'in-progress')
+                </when>
+                <otherwise>
+                    AND status != 'cancelled'
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countCommunity" resultType="long">
+        SELECT COUNT(*) FROM help_requests
+        <where>
+            <choose>
+                <when test="listScope == 'pending'">
+                    AND status = 'pending'
+                </when>
+                <when test="listScope == 'assigned_open'">
+                    AND status IN ('assigned', 'in-progress')
+                </when>
+                <otherwise>
+                    AND status != 'cancelled'
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <select id="countByTypeCreatedBetween" resultType="java.util.HashMap">
+        SELECT type AS type, COUNT(*) AS cnt
+        FROM help_requests
+        WHERE status != 'cancelled'
+          AND created_at &gt;= #{start}
+          AND created_at &lt; #{end}
+        GROUP BY type
+    </select>
+
+    <select id="findPendingWithLocation" resultMap="HelpRequestResultMap">
+        SELECT * FROM help_requests
+        WHERE status = 'pending' AND latitude IS NOT NULL AND longitude IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="findAllPendingForDispatch" resultMap="HelpRequestResultMap">
+        SELECT * FROM help_requests
+        WHERE status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

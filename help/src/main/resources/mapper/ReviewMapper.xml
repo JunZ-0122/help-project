@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.csi.help.mapper.ReviewMapper">
+
+    <resultMap id="BaseResultMap" type="com.csi.help.entity.Review">
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="reviewer_id" property="reviewerId"/>
+        <result column="reviewer_name" property="reviewerName"/>
+        <result column="reviewee_id" property="revieweeId"/>
+        <result column="reviewee_name" property="revieweeName"/>
+        <result column="rating" property="rating"/>
+        <result column="tags" property="tags"/>
+        <result column="content" property="content"/>
+        <result column="images" property="images"/>
+        <result column="is_anonymous" property="isAnonymous"/>
+        <result column="reply_content" property="replyContent"/>
+        <result column="reply_time" property="replyTime"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.csi.help.entity.Review">
+        INSERT INTO reviews (
+            id, order_id, reviewer_id, reviewer_name, reviewee_id, reviewee_name, 
+            rating, content, created_at
+        )
+        VALUES (
+            #{id}, #{orderId}, #{reviewerId}, #{reviewerName}, #{revieweeId}, #{revieweeName},
+            #{rating}, #{content}, NOW()
+        )
+    </insert>
+
+    <select id="findByOrderId" resultMap="BaseResultMap">
+        SELECT * FROM reviews WHERE order_id = #{orderId} LIMIT 1
+    </select>
+
+    <select id="findByOrderIdAndReviewerId" resultMap="BaseResultMap">
+        SELECT * FROM reviews
+        WHERE order_id = #{orderId} AND reviewer_id = #{reviewerId}
+        LIMIT 1
+    </select>
+
+    <select id="findByOrderIdAndRevieweeId" resultMap="BaseResultMap">
+        SELECT * FROM reviews
+        WHERE order_id = #{orderId} AND reviewee_id = #{revieweeId}
+        LIMIT 1
+    </select>
+
+    <update id="reply">
+        UPDATE reviews
+        SET reply_content = #{replyContent},
+            reply_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="avgRatingByRevieweeId" resultType="java.lang.Double">
+        SELECT AVG(rating) FROM reviews WHERE reviewee_id = #{revieweeId}
+    </select>
+
+    <select id="avgRatingCreatedBetween" resultType="java.lang.Double">
+        SELECT AVG(rating) FROM reviews
+        WHERE created_at &gt;= #{start}
+          AND created_at &lt; #{end}
+    </select>
+
+    <select id="avgRatingByRevieweeIdBetween" resultType="java.lang.Double">
+        SELECT AVG(rating) FROM reviews
+        WHERE reviewee_id = #{revieweeId}
+          AND created_at &gt;= #{start}
+          AND created_at &lt; #{end}
+    </select>
+
+</mapper>

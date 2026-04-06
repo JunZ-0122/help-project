@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.csi.help.mapper.ChatMessageMapper">
+
+    <resultMap id="BaseResultMap" type="com.csi.help.entity.ChatMessage">
+        <id column="id" property="id"/>
+        <result column="request_id" property="requestId"/>
+        <result column="sender_id" property="senderId"/>
+        <result column="sender_name" property="senderName"/>
+        <result column="sender_avatar" property="senderAvatar"/>
+        <result column="receiver_id" property="receiverId"/>
+        <result column="text" property="text"/>
+        <result column="type" property="type"/>
+        <result column="voice_url" property="voiceUrl"/>
+        <result column="voice_duration" property="voiceDuration"/>
+        <result column="image_url" property="imageUrl"/>
+        <result column="latitude" property="latitude"/>
+        <result column="longitude" property="longitude"/>
+        <result column="is_read" property="isRead"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.csi.help.entity.ChatMessage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chat_messages (
+            request_id, sender_id, sender_name, sender_avatar, receiver_id, text,
+            type, is_read, created_at
+        )
+        VALUES (
+            #{requestId}, #{senderId}, #{senderName}, #{senderAvatar}, #{receiverId}, #{text},
+            #{type}, #{isRead}, NOW()
+        )
+    </insert>
+
+    <select id="findByRequestId" resultMap="BaseResultMap">
+        SELECT * FROM chat_messages
+        WHERE request_id = #{requestId}
+        ORDER BY created_at ASC
+        <if test="offset != null and pageSize != null">
+            LIMIT #{offset}, #{pageSize}
+        </if>
+    </select>
+
+    <select id="countByRequestId" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM chat_messages WHERE request_id = #{requestId}
+    </select>
+
+    <select id="findByIds" resultMap="BaseResultMap">
+        SELECT * FROM chat_messages
+        WHERE id IN
+        <foreach collection="messageIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="markAsRead">
+        UPDATE chat_messages
+        SET is_read = 1
+        WHERE id IN
+        <foreach collection="messageIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="countUnread" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM chat_messages
+        WHERE request_id = #{requestId}
+        AND receiver_id = #{userId}
+        AND is_read = 0
+    </select>
+
+</mapper>

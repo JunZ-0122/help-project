@@ -1,0 +1,44 @@
+spring:
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  datasource:
+    url: jdbc:mysql://localhost:3306/help?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&useUnicode=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  # HTTP 编码配置
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.csi.help.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+jwt:
+  secret: CSIHelpJwtSecretKeyForPreviewAndDev1234567890
+
+# 无待接单数据时自动插入一条演示求助（志愿者端列表/附近可用）。生产部署请设为 false
+help:
+  seed-demo-if-empty: true
+
+# 高德 Web 服务（地理编码/逆地理/距离）。必须使用「Web服务」类型 Key（当前为 Web端 Key 会报 USERKEY_PLAT_NOMATCH）
+# 操作：控制台 help 应用 → 添加Key → 服务平台选「Web服务」→ 复制新 Key 替换下面值。详见 help/docs/高德Key-添加Web服务Key步骤.md
+amap:
+  web-service-key: ${AMAP_WEB_SERVICE_KEY:979048b553c25febcd9efb0549d9526c}
+  web-service-host: https://restapi.amap.com

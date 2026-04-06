@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "互助帮扶系统 - 弱势群体求助与志愿者帮扶平台"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "互助帮扶系统主应用"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "互助帮扶"
+    },
+    {
+      "name": "location_reason",
+      "value": "用于展示附近求助距离、发布求助时定位与志愿者匹配"
+    }
+  ]
+}

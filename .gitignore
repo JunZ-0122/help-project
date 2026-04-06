@@ -1,0 +1,12 @@
+# 忽略 node_modules 和缓存
+node_modules/
+help_system/.hh/project_caches/
+
+# 忽略 IDE 配置文件
+.vscode/
+.cursor/
+.kiro/
+
+# 忽略压缩包、临时文件
+*.zip
+*.log
