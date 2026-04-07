@@ -4,6 +4,7 @@ import { EmergencyApi, GeocodeApi, type CreateEmergencyRequestPayload } from '..
 import { getCurrentPosition, requestLocationPermission } from '../../utils/LocationUtil';
 import { StorageUtil } from '../../utils/StorageUtil';
 import type { UserProfile } from '../../models/User';
+import { WatchButton } from '../../components/WatchButton';
 
 /**
  * 手表端：求助者一键紧急求助（大按钮、少输入，复用 EmergencyApi）。
@@ -183,67 +184,69 @@ struct WatchSeekerEmergencyPage {
   }
 
   build() {
-    Column({ space: 16 }) {
-      Text('\u4e00\u952e\u6c42\u52a9')
-        .fontSize(this.largeFontEnabled ? 22 : 18)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(this.highContrastEnabled ? '#000000' : '#0f172a')
-        .width('100%')
-        .textAlign(TextAlign.Center)
+    Column() {
+      Scroll() {
+        Column({ space: 8 }) {
+          // Title - reduce font size
+          Text('\u4e00\u952e\u6c42\u52a9')
+            .fontSize(this.largeFontEnabled ? 16 : 14)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(this.highContrastEnabled ? '#000000' : '#0f172a')
+            .width('100%')
+            .textAlign(TextAlign.Center)
 
-      Text(this.hint)
-        .fontSize(this.largeFontEnabled ? 14 : 12)
-        .fontColor(this.highContrastEnabled ? '#000000' : '#64748b')
-        .width('100%')
-        .textAlign(TextAlign.Center)
-        .maxLines(5)
+          // Hint text - reduce font size
+          Text(this.hint)
+            .fontSize(this.largeFontEnabled ? 12 : 10)
+            .fontColor(this.highContrastEnabled ? '#000000' : '#64748b')
+            .width('100%')
+            .textAlign(TextAlign.Center)
+            .maxLines(5)
 
-      if (!this.hasLoginToken) {
-        Button('\u767b\u5f55')
-          .width('100%')
-          .height(this.largeFontEnabled ? 48 : 42)
-          .fontSize(this.largeFontEnabled ? 16 : 14)
-          .fontWeight(FontWeight.Medium)
-          .fontColor('#ffffff')
-          .backgroundColor(this.highContrastEnabled ? '#000000' : '#2563eb')
-          .borderRadius(12)
-          .onClick(() => {
-            this.goLogin();
+          // Login button (when not logged in) - replace with WatchButton
+          if (!this.hasLoginToken) {
+            WatchButton({
+              text: '\u767b\u5f55',
+              type: 'primary',
+              size: 'medium',
+              width: '100%',
+              onClick: () => { this.goLogin(); }
+            })
+          }
+
+          // Emergency submit button - replace with WatchButton
+          WatchButton({
+            text: this.isSubmitting ? '\u53d1\u9001\u4e2d...' : '\u53d1\u9001\u7d27\u6025\u6c42\u52a9',
+            type: 'emergency',
+            size: 'large',
+            width: '100%',
+            enabled: !this.isSubmitting,
+            accessibilityLabel: '发送紧急求助按钮',
+            onClick: () => { this.submit(); }
           })
+
+          // Refresh location button - replace with WatchButton
+          WatchButton({
+            text: this.isLocating ? '\u5b9a\u4f4d\u4e2d...' : '\u5237\u65b0\u4f4d\u7f6e',
+            type: 'secondary',
+            size: 'small',
+            width: '100%',
+            enabled: !this.isLocating,
+            onClick: () => {
+              this.tryLocate().then(() => {
+                this.hint = this.locationText.length > 0 ? '\u5df2\u66f4\u65b0\u4f4d\u7f6e' : '\u4ecd\u672a\u83b7\u53d6\u4f4d\u7f6e';
+              });
+            }
+          })
+        }
+        .width('100%')
+        .padding({ left: 12, right: 12, top: 30, bottom: 30 })
       }
-
-      Button(this.isSubmitting ? '\u53d1\u9001\u4e2d...' : '\u53d1\u9001\u7d27\u6025\u6c42\u52a9')
-        .width('100%')
-        .height(this.largeFontEnabled ? 56 : 48)
-        .fontSize(this.largeFontEnabled ? 18 : 16)
-        .fontWeight(FontWeight.Medium)
-        .fontColor('#ffffff')
-        .backgroundColor(this.highContrastEnabled ? '#000000' : '#dc2626')
-        .borderRadius(14)
-        .enabled(!this.isSubmitting)
-        .onClick(() => {
-          this.submit();
-        })
-
-      Button(this.isLocating ? '\u5b9a\u4f4d\u4e2d...' : '\u5237\u65b0\u4f4d\u7f6e')
-        .width('100%')
-        .height(this.largeFontEnabled ? 48 : 42)
-        .fontSize(this.largeFontEnabled ? 16 : 14)
-        .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#f1f5f9')
-        .fontColor(this.highContrastEnabled ? '#000000' : '#334155')
-        .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
-        .borderRadius(12)
-        .enabled(!this.isLocating)
-        .onClick(() => {
-          this.tryLocate().then(() => {
-            this.hint = this.locationText.length > 0 ? '\u5df2\u66f4\u65b0\u4f4d\u7f6e' : '\u4ecd\u672a\u83b7\u53d6\u4f4d\u7f6e';
-          });
-        })
+      .layoutWeight(1)
+      .scrollBar(BarState.Off)
     }
     .width('100%')
     .height('100%')
-    .padding({ left: 16, right: 16, top: 20, bottom: 20 })
-    .justifyContent(FlexAlign.Center)
     .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#f8fafc')
   }
 }
