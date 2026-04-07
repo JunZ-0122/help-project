@@ -1,6 +1,8 @@
 import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { NavBackButton } from '../../components/NavBackButton';
+import { WatchButton } from '../../components/WatchButton';
+import call from '@ohos.telephony.call';
 import { RequestApi } from '../../services/ApiService';
 import type { SeekerRequestDetail, SeekerTimelineItem } from '../../models';
 
@@ -108,12 +110,12 @@ struct WatchSeekerRequestDetailPage {
       Row({ space: 8 }) {
         NavBackButton()
         Text('求助详情')
-          .fontSize(16)
+          .fontSize(14)
           .fontWeight(FontWeight.Medium)
           .layoutWeight(1)
       }
       .width('100%')
-      .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+      .padding({ left: 0, right: 0, top: 0, bottom: 6 })
       .backgroundColor('#ffffff')
 
       if (this.isLoading) {
@@ -132,45 +134,65 @@ struct WatchSeekerRequestDetailPage {
         Scroll() {
           Column({ space: 10 }) {
             Text(this.safeText(this.detail.request.title, '求助'))
-              .fontSize(15)
+              .fontSize(13)
               .fontWeight(FontWeight.Medium)
               .width('100%')
 
             Text(this.safeText(this.detail.request.location, '位置未填写'))
-              .fontSize(12)
+              .fontSize(11)
               .fontColor('#64748b')
               .width('100%')
 
             if (this.detail.volunteer) {
               Column({ space: 4 }) {
                 Text('志愿者')
-                  .fontSize(11)
+                  .fontSize(10)
                   .fontColor('#64748b')
                 Text(`${this.safeText(this.detail.volunteer.name, '志愿者')} ${this.safeText(this.detail.volunteer.phoneMasked, '')}`)
-                  .fontSize(13)
+                  .fontSize(11)
               }
               .width('100%')
               .alignItems(HorizontalAlign.Start)
               .padding(10)
               .backgroundColor('#f1f5f9')
               .borderRadius(10)
+
+              if (this.detail.volunteer && this.detail.volunteer.phone) {
+                WatchButton({
+                  text: '拨打志愿者电话',
+                  type: 'primary',
+                  size: 'medium',
+                  width: '100%',
+                  accessibilityLabel: '拨打志愿者电话',
+                  onClick: () => {
+                    try {
+                      call.makeCall(this.detail!.volunteer!.phone!);
+                    } catch (e) {
+                      promptAction.showToast({
+                        message: `电话：${this.detail!.volunteer!.phoneMasked}`,
+                        duration: 3000
+                      });
+                    }
+                  }
+                })
+              }
             }
 
             Text('进度')
-              .fontSize(13)
+              .fontSize(12)
               .fontWeight(FontWeight.Medium)
             ForEach(this.detail.timeline, (it: SeekerTimelineItem, idx: number) => {
               Row({ space: 8 }) {
                 Text(`${idx + 1}`)
                   .fontSize(12)
                   .fontColor('#ffffff')
-                  .width(22)
-                  .height(22)
+                  .width(18)
+                  .height(18)
                   .textAlign(TextAlign.Center)
-                  .borderRadius(11)
+                  .borderRadius(9)
                   .backgroundColor(this.timelineStateColor(it.state))
                 Column({ space: 2 }) {
-                  Text(this.safeText(it.label, `进度${idx + 1}`)).fontSize(12)
+                  Text(this.safeText(it.label, `进度${idx + 1}`)).fontSize(11)
                   Text(this.safeText(it.time, '--')).fontSize(10).fontColor('#94a3b8')
                 }
                 .alignItems(HorizontalAlign.Start)
@@ -180,19 +202,18 @@ struct WatchSeekerRequestDetailPage {
             }, (it: SeekerTimelineItem, idx: number) => `tl-${idx}-${it.label}-${it.time}`)
 
             if (this.canCancel()) {
-              Button(this.isCancelling ? '处理中...' : '取消求助')
-                .width('100%')
-                .height(40)
-                .fontColor('#ffffff')
-                .backgroundColor('#ef4444')
-                .enabled(!this.isCancelling)
-                .onClick(() => {
-                  this.cancel();
-                })
+              WatchButton({
+                text: this.isCancelling ? '处理中...' : '取消求助',
+                type: 'emergency',
+                size: 'medium',
+                width: '100%',
+                enabled: !this.isCancelling,
+                onClick: () => { this.cancel(); }
+              })
             }
           }
           .width('100%')
-          .padding(10)
+          .padding(0)
         }
         .layoutWeight(1)
         .align(Alignment.TopStart)
@@ -201,6 +222,6 @@ struct WatchSeekerRequestDetailPage {
     .width('100%')
     .height('100%')
     .backgroundColor('#f8fafc')
-    .padding({ top: 6 })
+    .padding({ top: 30, bottom: 30, left: 12, right: 12 })
   }
 }
