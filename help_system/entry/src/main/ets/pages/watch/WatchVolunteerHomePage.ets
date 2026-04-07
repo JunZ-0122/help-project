@@ -86,13 +86,17 @@ struct WatchVolunteerHomePage {
   }
 
   build() {
-    WatchCircularLayout({
-      centerRadius: 120,
-      edgePadding: 16,
-      content: () => {
-        this.pageContent()
-      }
-    })
+    Column() {
+      WatchCircularLayout({
+        centerRadius: 120,
+        edgePadding: 16,
+        content: () => {
+          this.pageContent()
+        }
+      })
+    }
+    .width('100%')
+    .height('100%')
   }
 
   @Builder
@@ -122,50 +126,51 @@ struct WatchVolunteerHomePage {
 
       WatchButton({
         text: this.isTogglingStatus ? '...' : (this.isOnline ? '在线 (点击离线)' : '离线 (点击上线)'),
-        type: this.isOnline ? 'primary' : 'secondary',
-        size: 'small',
-        width: '100%',
-        onClick: () => {
-          this.toggleOnline();
-        }
+        buttonType: this.isOnline ? 'primary' : 'secondary',
+        buttonSize: 'small',
+        buttonWidth: '100%'
+      })
+      .onClick(() => {
+        this.toggleOnline();
       })
 
       WatchButton({
         text: '查看附近求助',
-        type: 'primary',
-        size: 'medium',
-        width: '100%',
-        onClick: () => {
-          this.goNearby();
-        }
+        buttonType: 'primary',
+        buttonSize: 'medium',
+        buttonWidth: '100%'
+      })
+      .onClick(() => {
+        this.goNearby();
       })
 
       WatchButton({
         text: '我的服务',
-        type: 'primary',
-        size: 'medium',
-        width: '100%',
-        onClick: () => {
-          this.goOrders();
-        }
+        buttonType: 'primary',
+        buttonSize: 'medium',
+        buttonWidth: '100%'
+      })
+      .onClick(() => {
+        this.goOrders();
       })
 
       Row({ space: 6 }) {
         WatchButton({
           text: '设置',
-          type: 'secondary',
-          size: 'small',
-          onClick: () => {
-            this.goSettings();
-          }
+          buttonType: 'secondary',
+          buttonSize: 'small'
         })
+        .onClick(() => {
+          this.goSettings();
+        })
+        
         WatchButton({
           text: '退出',
-          type: 'secondary',
-          size: 'small',
-          onClick: () => {
-            this.logout();
-          }
+          buttonType: 'secondary',
+          buttonSize: 'small'
+        })
+        .onClick(() => {
+          this.logout();
         })
       }
       .width('100%')

@@ -63,16 +63,12 @@ struct WatchSeekerRequestPage {
   }
 
   private typeName(type: string): string {
-    switch (type) {
-      case 'medical':
-        return '就医求助';
-      case 'companion':
-        return '出行协助';
-      case 'shopping':
-        return '生活帮扶';
-      default:
-        return '其他求助';
-    }
+    const typeNames: Record<string, string> = {
+      'medical': '就医求助',
+      'companion': '出行协助',
+      'shopping': '生活帮扶'
+    };
+    return typeNames[type] || '其他求助';
   }
 
   private async submit(): Promise<void> {
@@ -83,16 +79,16 @@ struct WatchSeekerRequestPage {
     try {
       const loc = this.locationText.trim().length > 0
         ? this.locationText.trim()
-        : '未知位置（手表端发起）';
+        : '未知位置（手表端发起�?;
 
       const payload: Partial<HelpRequest> = {
-        type: this.selectedType as HelpRequest['type'],
+        type: this.selectedType as 'medical' | 'companion' | 'shopping' | 'other',
         title: this.typeName(this.selectedType),
         description: this.description.trim().length > 0
-          ? `【手表端】${this.description.trim()}`
-          : `【手表端】${this.typeName(this.selectedType)}`,
+          ? `【手表端�?{this.description.trim()}`
+          : `【手表端�?{this.typeName(this.selectedType)}`,
         location: loc,
-        urgency: this.urgencyForType(this.selectedType) as HelpRequest['urgency']
+        urgency: this.urgencyForType(this.selectedType) as 'low' | 'medium' | 'high' | 'emergency'
       };
 
       if (this.hasGeo) {
@@ -101,7 +97,7 @@ struct WatchSeekerRequestPage {
       }
 
       const created = await RequestApi.createRequest(payload);
-      promptAction.showToast({ message: '已发起求助', duration: 1500 });
+      promptAction.showToast({ message: '已发起求�?, duration: 1500 });
       router.replaceUrl({
         url: 'pages/watch/WatchMyRequestsPage',
         params: { createdId: created.id }
@@ -139,14 +135,14 @@ struct WatchSeekerRequestPage {
             Row({ space: 6 }) {
               WatchButton({
                 text: '就医',
-                type: 'emergency',
-                size: 'small',
+                buttonType: 'emergency',
+                buttonSize: 'small',
                 onClick: () => { this.selectedType = 'medical'; }
               })
               WatchButton({
                 text: '出行',
-                type: 'primary',
-                size: 'small',
+                buttonType: 'primary',
+                buttonSize: 'small',
                 onClick: () => { this.selectedType = 'companion'; }
               })
             }
@@ -156,14 +152,14 @@ struct WatchSeekerRequestPage {
             Row({ space: 6 }) {
               WatchButton({
                 text: '生活',
-                type: 'primary',
-                size: 'small',
+                buttonType: 'primary',
+                buttonSize: 'small',
                 onClick: () => { this.selectedType = 'shopping'; }
               })
               WatchButton({
                 text: '其他',
-                type: 'secondary',
-                size: 'small',
+                buttonType: 'secondary',
+                buttonSize: 'small',
                 onClick: () => { this.selectedType = 'other'; }
               })
             }
@@ -171,11 +167,11 @@ struct WatchSeekerRequestPage {
             .justifyContent(FlexAlign.SpaceEvenly)
           } else {
             Row({ space: 6 }) {
-              Text(`类型：${this.typeName(this.selectedType)}`)
+              Text(`类型�?{this.typeName(this.selectedType)}`)
                 .fontSize(12)
                 .fontWeight(FontWeight.Medium)
                 .layoutWeight(1)
-              Text('重选')
+              Text('重�?)
                 .fontSize(10)
                 .fontColor('#2563eb')
                 .onClick(() => { this.selectedType = ''; })
@@ -189,18 +185,18 @@ struct WatchSeekerRequestPage {
                 this.description = v;
               })
 
-            Text(this.isLocating ? '定位中...' : (this.locationText || '未获取位置'))
+            Text(this.isLocating ? '定位�?..' : (this.locationText || '未获取位�?))
               .fontSize(10)
               .fontColor('#64748b')
               .maxLines(2)
               .width('100%')
 
             WatchButton({
-              text: this.isSubmitting ? '提交中...' : '提交求助',
-              type: 'primary',
-              size: 'medium',
-              width: '100%',
-              enabled: !this.isSubmitting,
+              text: this.isSubmitting ? '提交�?..' : '提交求助',
+              buttonType: 'primary',
+              buttonSize: 'medium',
+              buttonWidth: '100%',
+              buttonEnabled: !this.isSubmitting,
               onClick: () => {
                 this.submit();
               }

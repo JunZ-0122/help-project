@@ -43,13 +43,13 @@ struct WatchVolunteerOrdersPage {
   private statusLabel(s: string): string {
     switch (s) {
       case 'accepted':
-        return '已接单';
+        return '已接�?;
       case 'in-progress':
-        return '服务中';
+        return '服务�?;
       case 'completed':
-        return '已完成';
+        return '已完�?;
       case 'cancelled':
-        return '已取消';
+        return '已取�?;
       default:
         return s;
     }
@@ -112,7 +112,7 @@ struct WatchVolunteerOrdersPage {
       if (this.isLoading) {
         Column({ space: 6 }) {
           LoadingProgress().width(28).height(28)
-          Text('加载中...').fontSize(11).fontColor('#64748b')
+          Text('加载�?..').fontSize(11).fontColor('#64748b')
         }
         .layoutWeight(1)
         .width('100%')
@@ -157,9 +157,9 @@ struct WatchVolunteerOrdersPage {
 
       WatchButton({
         text: '刷新',
-        type: 'secondary',
-        size: 'small',
-        width: '100%',
+        buttonType: 'secondary',
+        buttonSize: 'small',
+        buttonWidth: '100%',
         onClick: () => {
           this.loadOrders();
         }

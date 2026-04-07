@@ -43,13 +43,17 @@ struct WatchSeekerHomePage {
   }
 
   build() {
-    WatchCircularLayout({
-      centerRadius: 120,
-      edgePadding: 16,
-      content: () => {
-        this.pageContent()
-      }
-    })
+    Column() {
+      WatchCircularLayout({
+        centerRadius: 120,
+        edgePadding: 16,
+        content: () => {
+          this.pageContent()
+        }
+      })
+    }
+    .width('100%')
+    .height('100%')
   }
 
   @Builder
@@ -69,41 +73,52 @@ struct WatchSeekerHomePage {
 
       WatchButton({
         text: '一键紧急求助',
-        type: 'emergency',
-        size: 'large',
-        width: '100%',
-        accessibilityLabel: '一键紧急求助按钮',
-        onClick: () => { this.goEmergency(); }
+        buttonType: 'emergency',
+        buttonSize: 'large',
+        buttonWidth: '100%',
+        accessibilityLabel: '一键紧急求助按钮'
+      })
+      .onClick(() => { 
+        this.goEmergency(); 
       })
 
       WatchButton({
         text: '分类求助',
-        type: 'primary',
-        size: 'medium',
-        width: '100%',
-        onClick: () => { this.goRequest(); }
+        buttonType: 'primary',
+        buttonSize: 'medium',
+        buttonWidth: '100%'
+      })
+      .onClick(() => { 
+        this.goRequest(); 
       })
 
       WatchButton({
         text: '我的求助',
-        type: 'primary',
-        size: 'medium',
-        width: '100%',
-        onClick: () => { this.goMyRequests(); }
+        buttonType: 'primary',
+        buttonSize: 'medium',
+        buttonWidth: '100%'
+      })
+      .onClick(() => { 
+        this.goMyRequests(); 
       })
 
       Row({ space: 6 }) {
         WatchButton({
           text: '设置',
-          type: 'secondary',
-          size: 'small',
-          onClick: () => { this.goSettings(); }
+          buttonType: 'secondary',
+          buttonSize: 'small'
         })
+        .onClick(() => { 
+          this.goSettings(); 
+        })
+        
         WatchButton({
           text: '退出',
-          type: 'secondary',
-          size: 'small',
-          onClick: () => { this.logout(); }
+          buttonType: 'secondary',
+          buttonSize: 'small'
+        })
+        .onClick(() => { 
+          this.logout(); 
         })
       }
       .width('100%')

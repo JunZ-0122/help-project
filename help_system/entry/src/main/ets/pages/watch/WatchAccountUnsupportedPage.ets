@@ -39,11 +39,15 @@ struct WatchAccountUnsupportedPage {
   }
 
   build() {
-    WatchCircularLayout({
-      centerRadius: 120,
-      edgePadding: 16,
-      content: () => { this.pageContent() }
-    })
+    Column() {
+      WatchCircularLayout({
+        centerRadius: 120,
+        edgePadding: 16,
+        content: () => { this.pageContent() }
+      })
+    }
+    .width('100%')
+    .height('100%')
   }
 
   @Builder
@@ -62,10 +66,12 @@ struct WatchAccountUnsupportedPage {
 
       WatchButton({
         text: '返回登录',
-        type: 'secondary',
-        size: 'medium',
-        width: '100%',
-        onClick: () => { this.logout(); }
+        buttonType: 'secondary',
+        buttonSize: 'medium',
+        buttonWidth: '100%'
+      })
+      .onClick(() => { 
+        this.logout(); 
       })
     }
     .width('100%')

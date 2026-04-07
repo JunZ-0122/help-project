@@ -31,9 +31,9 @@ struct WatchSettingsPage {
   private roleLabel(role: string): string {
     switch (role) {
       case 'help-seeker':
-        return '求助者';
+        return '求助�?;
       case 'volunteer':
-        return '志愿者';
+        return '志愿�?;
       default:
         return role;
     }
@@ -71,13 +71,17 @@ struct WatchSettingsPage {
   }
 
   build() {
-    WatchCircularLayout({
-      centerRadius: 120,
-      edgePadding: 16,
-      content: () => {
-        this.pageContent()
-      }
-    })
+    Column() {
+      WatchCircularLayout({
+        centerRadius: 120,
+        edgePadding: 16,
+        content: () => {
+          this.pageContent()
+        }
+      })
+    }
+    .width('100%')
+    .height('100%')
   }
 
   @Builder
@@ -92,28 +96,28 @@ struct WatchSettingsPage {
       }
       .width('100%')
 
-      Text(`当前身份：${this.roleLabel(this.currentRole)}`)
+      Text(`当前身份�?{this.roleLabel(this.currentRole)}`)
         .fontSize(11)
         .fontColor('#64748b')
         .width('100%')
         .textAlign(TextAlign.Center)
 
       WatchButton({
-        text: this.isSwitching ? '切换中...' : `切换为${this.roleLabel(this.targetRole())}`,
-        type: 'primary',
-        size: 'medium',
-        width: '100%',
-        enabled: !this.isSwitching,
+        text: this.isSwitching ? '切换�?..' : `切换�?{this.roleLabel(this.targetRole())}`,
+        buttonType: 'primary',
+        buttonSize: 'medium',
+        buttonWidth: '100%',
+        buttonEnabled: !this.isSwitching,
         onClick: () => {
           this.switchRole();
         }
       })
 
       WatchButton({
-        text: '无障碍设置',
-        type: 'secondary',
-        size: 'medium',
-        width: '100%',
+        text: '无障碍设�?,
+        buttonType: 'secondary',
+        buttonSize: 'medium',
+        buttonWidth: '100%',
         onClick: () => {
           router.pushUrl({ url: 'pages/watch/WatchAccessibilityPage' }).catch((err: Error) => {
             console.error('nav accessibility failed:', err);

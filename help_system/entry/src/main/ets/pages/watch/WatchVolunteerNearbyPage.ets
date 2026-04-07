@@ -45,7 +45,7 @@ struct WatchVolunteerNearbyPage {
       case 'companion':
         return '出行';
       case 'emergency':
-        return '紧急';
+        return '紧�?;
       default:
         return '求助';
     }
@@ -70,7 +70,7 @@ struct WatchVolunteerNearbyPage {
         this.requests = res.items.map((it: HelpRequestWithDistance): ReqRow => ({
           id: it.request.id,
           title: this.safeText(it.request.title, this.typeLabel(it.request.type)),
-          sub: this.safeText(it.request.location, '位置未填写'),
+          sub: this.safeText(it.request.location, '位置未填�?),
           distanceKm: it.distance
         }));
       } catch (_) {
@@ -79,7 +79,7 @@ struct WatchVolunteerNearbyPage {
         this.requests = res.items.map((r: HelpRequest): ReqRow => ({
           id: r.id,
           title: this.safeText(r.title, this.typeLabel(r.type)),
-          sub: this.safeText(r.location, '位置未填写')
+          sub: this.safeText(r.location, '位置未填�?)
         }));
       }
     } catch (e) {
@@ -114,7 +114,7 @@ struct WatchVolunteerNearbyPage {
       if (this.isLoading) {
         Column({ space: 6 }) {
           LoadingProgress().width(28).height(28)
-          Text('加载中...').fontSize(11).fontColor('#64748b')
+          Text('加载�?..').fontSize(11).fontColor('#64748b')
         }
         .layoutWeight(1)
         .width('100%')
@@ -140,7 +140,7 @@ struct WatchVolunteerNearbyPage {
                   .fontColor('#64748b')
                   .maxLines(1)
                 if (r.distanceKm !== undefined) {
-                  Text(`约 ${r.distanceKm.toFixed(1)} km`)
+                  Text(`�?${r.distanceKm.toFixed(1)} km`)
                     .fontSize(10)
                     .fontColor('#94a3b8')
                 }
@@ -161,9 +161,9 @@ struct WatchVolunteerNearbyPage {
 
       WatchButton({
         text: '刷新',
-        type: 'secondary',
-        size: 'small',
-        width: '100%',
+        buttonType: 'secondary',
+        buttonSize: 'small',
+        buttonWidth: '100%',
         onClick: () => {
           this.loadRequests();
         }

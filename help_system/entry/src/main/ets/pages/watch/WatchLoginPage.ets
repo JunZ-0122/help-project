@@ -6,7 +6,7 @@ import type { LoginRequest, LoginResponse } from '../../models/Auth';
 import { WatchButton } from '../../components/WatchButton';
 
 /**
- * 手表专用登录：仅已有账号短信登录，不承载注册/选角（与手机 LoginPage 隔离）。
+ * 手表专用登录：仅已有账号短信登录，不承载注册/选角（与手机 LoginPage 隔离）�?
  */
 @Entry
 @Component
@@ -260,12 +260,12 @@ struct WatchLoginPage {
                   : { width: this.activeField === 'code' ? 2 : 1, color: this.activeField === 'code' ? '#2563eb' : '#cbd5e1' })
               WatchButton({
                 text: this.countdown > 0 ? `${this.countdown}秒` : '获取验证码',
-                type: 'secondary',
-                size: 'small',
-                enabled: this.phone.length === 11 && this.countdown === 0,
-                onClick: () => {
-                  this.handleSendCode();
-                }
+                buttonType: 'secondary',
+                buttonSize: 'small',
+                buttonEnabled: this.phone.length === 11 && this.countdown === 0
+              })
+              .onClick(() => {
+                this.handleSendCode();
               })
             }
           }
@@ -312,13 +312,13 @@ struct WatchLoginPage {
 
           WatchButton({
             text: this.isLoading ? '登录中...' : '登录',
-            type: 'primary',
-            size: 'medium',
-            width: '100%',
-            enabled: this.phone.length === 11 && this.code.length > 0 && !this.isLoading,
-            onClick: () => {
-              this.handleLogin();
-            }
+            buttonType: 'primary',
+            buttonSize: 'medium',
+            buttonWidth: '100%',
+            buttonEnabled: this.phone.length === 11 && this.code.length > 0 && !this.isLoading
+          })
+          .onClick(() => {
+            this.handleLogin();
           })
         }
         .width('100%')
