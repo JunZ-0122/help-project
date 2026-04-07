@@ -38,6 +38,11 @@
     "pages/watch/WatchVolunteerRequestDetailPage",
     "pages/watch/WatchVolunteerServicePage",
     "pages/watch/WatchVolunteerReviewPage",
-    "pages/watch/WatchSeekerEmergencyPage"
+    "pages/watch/WatchSeekerEmergencyPage",
+    "pages/watch/WatchSeekerRequestPage",
+    "pages/watch/WatchSettingsPage",
+    "pages/watch/WatchAccessibilityPage",
+    "pages/watch/WatchVolunteerNearbyPage",
+    "pages/watch/WatchVolunteerOrdersPage"
   ]
 }
