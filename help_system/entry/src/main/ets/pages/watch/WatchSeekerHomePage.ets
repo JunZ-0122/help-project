@@ -2,6 +2,7 @@ import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { AuthService } from '../../services/AuthService';
 import { WatchCircularLayout } from '../../components/WatchCircularLayout';
+import { WatchButton } from '../../components/WatchButton';
 
 /**
  * 求助者手表首页（壳）：进入一键紧急等能力，后续在此扩展闭环。
@@ -29,6 +30,18 @@ struct WatchSeekerHomePage {
     });
   }
 
+  private goRequest(): void {
+    router.pushUrl({ url: 'pages/watch/WatchSeekerRequestPage' }).catch((err: Error) => {
+      console.error('nav request failed:', err);
+    });
+  }
+
+  private goSettings(): void {
+    router.pushUrl({ url: 'pages/watch/WatchSettingsPage' }).catch((err: Error) => {
+      console.error('nav settings failed:', err);
+    });
+  }
+
   build() {
     WatchCircularLayout({
       centerRadius: 120,
@@ -41,52 +54,60 @@ struct WatchSeekerHomePage {
 
   @Builder
   pageContent() {
-    Column({ space: 16 }) {
+    Column({ space: 8 }) {
       Text('互助帮扶')
-        .fontSize(18)
+        .fontSize(15)
         .fontWeight(FontWeight.Bold)
         .width('100%')
         .textAlign(TextAlign.Center)
 
       Text('求助者')
-        .fontSize(14)
+        .fontSize(11)
         .fontColor('#64748b')
         .width('100%')
         .textAlign(TextAlign.Center)
 
-      Button('一键紧急求助')
-        .width('100%')
-        .height(48)
-        .fontSize(16)
-        .fontWeight(FontWeight.Medium)
-        .fontColor('#ffffff')
-        .backgroundColor('#dc2626')
-        .borderRadius(14)
-        .onClick(() => {
-          this.goEmergency();
-        })
+      WatchButton({
+        text: '一键紧急求助',
+        type: 'emergency',
+        size: 'large',
+        width: '100%',
+        accessibilityLabel: '一键紧急求助按钮',
+        onClick: () => { this.goEmergency(); }
+      })
 
-      Button('我的求助')
-        .width('100%')
-        .height(44)
-        .fontSize(15)
-        .fontColor('#ffffff')
-        .backgroundColor('#2563eb')
-        .borderRadius(14)
-        .onClick(() => {
-          this.goMyRequests();
-        })
+      WatchButton({
+        text: '分类求助',
+        type: 'primary',
+        size: 'medium',
+        width: '100%',
+        onClick: () => { this.goRequest(); }
+      })
 
-      Button('退出登录')
-        .width('100%')
-        .height(40)
-        .fontSize(14)
-        .backgroundColor('#f1f5f9')
-        .fontColor('#334155')
-        .borderRadius(12)
-        .onClick(() => {
-          this.logout();
+      WatchButton({
+        text: '我的求助',
+        type: 'primary',
+        size: 'medium',
+        width: '100%',
+        onClick: () => { this.goMyRequests(); }
+      })
+
+      Row({ space: 6 }) {
+        WatchButton({
+          text: '设置',
+          type: 'secondary',
+          size: 'small',
+          onClick: () => { this.goSettings(); }
         })
+        WatchButton({
+          text: '退出',
+          type: 'secondary',
+          size: 'small',
+          onClick: () => { this.logout(); }
+        })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
     }
     .width('100%')
   }
