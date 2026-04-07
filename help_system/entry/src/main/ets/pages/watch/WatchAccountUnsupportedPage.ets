@@ -1,6 +1,8 @@
 import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { AuthService } from '../../services/AuthService';
+import { WatchCircularLayout } from '../../components/WatchCircularLayout';
+import { WatchButton } from '../../components/WatchButton';
 
 interface UnsupportedParams {
   reason?: string;
@@ -37,28 +39,36 @@ struct WatchAccountUnsupportedPage {
   }
 
   build() {
-    Column({ space: 16 }) {
+    WatchCircularLayout({
+      centerRadius: 120,
+      edgePadding: 16,
+      content: () => { this.pageContent() }
+    })
+  }
+
+  @Builder
+  pageContent() {
+    Column({ space: 8 }) {
       Text('当前账号')
-        .fontSize(16)
+        .fontSize(14)
         .fontWeight(FontWeight.Bold)
         .width('100%')
         .textAlign(TextAlign.Center)
 
       Text(this.message())
-        .fontSize(13)
+        .fontSize(11)
         .fontColor('#64748b')
         .textAlign(TextAlign.Center)
 
-      Button('返回登录')
-        .width('100%')
-        .height(42)
-        .onClick(() => {
-          this.logout();
-        })
+      WatchButton({
+        text: '返回登录',
+        type: 'secondary',
+        size: 'medium',
+        width: '100%',
+        onClick: () => { this.logout(); }
+      })
     }
     .width('100%')
-    .height('100%')
-    .padding(20)
     .justifyContent(FlexAlign.Center)
     .backgroundColor('#f8fafc')
   }
