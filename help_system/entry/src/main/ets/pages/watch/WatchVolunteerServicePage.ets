@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { NavBackButton } from '../../components/NavBackButton';
+import { WatchButton } from '../../components/WatchButton';
 import { OrderApi } from '../../services/ApiService';
 import { DateUtil } from '../../utils/DateUtil';
 import type { VolunteerOrder } from '../../models/Order';
@@ -163,12 +164,12 @@ struct WatchVolunteerServicePage {
       Row({ space: 8 }) {
         NavBackButton()
         Text('服务进度')
-          .fontSize(16)
+          .fontSize(14)
           .fontWeight(FontWeight.Medium)
           .layoutWeight(1)
       }
       .width('100%')
-      .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+      .padding({ left: 0, right: 0, top: 0, bottom: 6 })
       .backgroundColor('#ffffff')
 
       if (this.isLoading) {
@@ -187,16 +188,16 @@ struct WatchVolunteerServicePage {
         Scroll() {
           Column({ space: 12 }) {
             Text(this.safeText(this.order.title, '订单'))
-              .fontSize(15)
+              .fontSize(13)
               .fontWeight(FontWeight.Medium)
             Text(this.statusLabel(this.order.status))
-              .fontSize(12)
+              .fontSize(11)
               .fontColor('#2563eb')
             Text(this.safeText(this.order.location, '位置未填写'))
-              .fontSize(11)
+              .fontSize(10)
               .fontColor('#64748b')
             Text(`求助者：${this.safeText(this.order.helpSeekerName, '求助者')}`)
-              .fontSize(11)
+              .fontSize(10)
               .fontColor('#64748b')
             Text(`接单时间：${DateUtil.format(this.order.acceptedAt, 'MM-DD HH:mm')}`)
               .fontSize(10)
@@ -204,51 +205,52 @@ struct WatchVolunteerServicePage {
 
             if (this.order.status === 'in-progress') {
               Text(`本次计时：${this.formatElapsed(this.elapsedSec)}`)
-                .fontSize(13)
+                .fontSize(12)
                 .fontWeight(FontWeight.Medium)
                 .fontColor('#0f172a')
             }
 
             if (this.order.status === 'accepted') {
-              Button(this.isUpdating ? '...' : '开始服务')
-                .width('100%')
-                .height(40)
-                .fontColor('#ffffff')
-                .backgroundColor('#f59e0b')
-                .enabled(!this.isUpdating)
-                .onClick(() => {
-                  this.startService();
-                })
+              WatchButton({
+                text: this.isUpdating ? '...' : '开始服务',
+                type: 'primary',
+                size: 'medium',
+                width: '100%',
+                enabled: !this.isUpdating,
+                onClick: () => { this.startService(); }
+              })
             }
 
             if (this.order.status === 'in-progress') {
-              Button(this.isUpdating ? '...' : '完成服务')
-                .width('100%')
-                .height(40)
-                .fontColor('#ffffff')
-                .backgroundColor('#10b981')
-                .enabled(!this.isUpdating)
-                .onClick(() => {
-                  this.completeService();
-                })
+              WatchButton({
+                text: this.isUpdating ? '...' : '完成服务',
+                type: 'primary',
+                size: 'medium',
+                width: '100%',
+                enabled: !this.isUpdating,
+                onClick: () => { this.completeService(); }
+              })
             }
 
             if (this.order.status === 'completed') {
-              Button('去评价')
-                .width('100%')
-                .height(38)
-                .onClick(() => {
+              WatchButton({
+                text: '去评价',
+                type: 'secondary',
+                size: 'medium',
+                width: '100%',
+                onClick: () => {
                   router.pushUrl({
                     url: 'pages/watch/WatchVolunteerReviewPage',
                     params: { id: this.orderId }
                   }).catch((err: Error) => {
                     console.error('nav review failed:', err);
                   });
-                })
+                }
+              })
             }
           }
           .width('100%')
-          .padding(10)
+          .padding(0)
         }
         .layoutWeight(1)
         .align(Alignment.TopStart)
@@ -257,6 +259,6 @@ struct WatchVolunteerServicePage {
     .width('100%')
     .height('100%')
     .backgroundColor('#f8fafc')
-    .padding({ top: 6 })
+    .padding({ top: 30, bottom: 30, left: 12, right: 12 })
   }
 }
