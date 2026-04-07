@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { NavBackButton } from '../../components/NavBackButton';
+import { WatchButton } from '../../components/WatchButton';
 import { OrderApi, ReviewApi } from '../../services/ApiService';
 import type { Review } from '../../models';
 import type { VolunteerOrder } from '../../models/Order';
@@ -76,12 +77,12 @@ struct WatchVolunteerReviewPage {
       Row({ space: 8 }) {
         NavBackButton()
         Text('评价求助者')
-          .fontSize(17)
+          .fontSize(14)
           .fontWeight(FontWeight.Medium)
           .layoutWeight(1)
       }
       .width('100%')
-      .padding(12)
+      .padding({ left: 0, right: 0, top: 0, bottom: 6 })
       .backgroundColor('#ffffff')
 
       if (this.isLoading) {
@@ -93,48 +94,40 @@ struct WatchVolunteerReviewPage {
         .justifyContent(FlexAlign.Center)
       } else {
         Scroll() {
-          Column({ space: 12 }) {
+          Column({ space: 8 }) {
             Text(this.seekerName.length > 0 ? `服务对象：${this.seekerName}` : '请为本次沟通打分')
-              .fontSize(14)
+              .fontSize(12)
               .width('100%')
 
-            Row({ space: 8 }) {
-              Button('满意')
-                .layoutWeight(1)
-                .height(40)
-                .fontSize(13)
-                .backgroundColor(this.selectedScore === 5 ? '#10b981' : '#e2e8f0')
-                .fontColor(this.selectedScore === 5 ? '#ffffff' : '#334155')
-                .enabled(this.existing === null)
-                .onClick(() => {
-                  this.selectedScore = 5;
-                })
-              Button('一般')
-                .layoutWeight(1)
-                .height(40)
-                .fontSize(13)
-                .backgroundColor(this.selectedScore === 3 ? '#f59e0b' : '#e2e8f0')
-                .fontColor(this.selectedScore === 3 ? '#ffffff' : '#334155')
-                .enabled(this.existing === null)
-                .onClick(() => {
-                  this.selectedScore = 3;
-                })
-              Button('不满')
-                .layoutWeight(1)
-                .height(40)
-                .fontSize(13)
-                .backgroundColor(this.selectedScore === 1 ? '#ef4444' : '#e2e8f0')
-                .fontColor(this.selectedScore === 1 ? '#ffffff' : '#334155')
-                .enabled(this.existing === null)
-                .onClick(() => {
-                  this.selectedScore = 1;
-                })
+            Row({ space: 6 }) {
+              WatchButton({
+                text: '满意',
+                type: this.selectedScore === 5 ? 'primary' : 'secondary',
+                size: 'small',
+                enabled: this.existing === null,
+                onClick: () => { this.selectedScore = 5; }
+              })
+              WatchButton({
+                text: '一般',
+                type: this.selectedScore === 3 ? 'primary' : 'secondary',
+                size: 'small',
+                enabled: this.existing === null,
+                onClick: () => { this.selectedScore = 3; }
+              })
+              WatchButton({
+                text: '不满',
+                type: this.selectedScore === 1 ? 'emergency' : 'secondary',
+                size: 'small',
+                enabled: this.existing === null,
+                onClick: () => { this.selectedScore = 1; }
+              })
             }
             .width('100%')
+            .justifyContent(FlexAlign.SpaceBetween)
 
             TextInput({ placeholder: '补充说明（可选）' })
-              .height(72)
-              .fontSize(13)
+              .height(56)
+              .fontSize(11)
               .enabled(this.existing === null)
               .onChange((v: string) => {
                 this.feedback = v;
@@ -142,20 +135,21 @@ struct WatchVolunteerReviewPage {
 
             if (this.existing !== null) {
               Text('已提交评价')
-                .fontSize(13)
+                .fontSize(11)
                 .fontColor('#64748b')
             } else {
-              Button(this.isSubmitting ? '提交中...' : '提交评价')
-                .width('100%')
-                .height(42)
-                .enabled(this.selectedScore > 0 && !this.isSubmitting)
-                .onClick(() => {
-                  this.submit();
-                })
+              WatchButton({
+                text: this.isSubmitting ? '提交中...' : '提交评价',
+                type: 'primary',
+                size: 'medium',
+                width: '100%',
+                enabled: this.selectedScore > 0 && !this.isSubmitting,
+                onClick: () => { this.submit(); }
+              })
             }
           }
           .width('100%')
-          .padding(12)
+          .padding(0)
         }
         .layoutWeight(1)
         .align(Alignment.TopStart)
@@ -164,5 +158,6 @@ struct WatchVolunteerReviewPage {
     .width('100%')
     .height('100%')
     .backgroundColor('#f8fafc')
+    .padding({ top: 30, bottom: 30, left: 12, right: 12 })
   }
 }
