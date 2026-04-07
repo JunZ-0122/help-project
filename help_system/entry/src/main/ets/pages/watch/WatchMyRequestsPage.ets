@@ -113,12 +113,12 @@ struct WatchMyRequestsPage {
       Row({ space: 8 }) {
         NavBackButton()
         Text('我的求助')
-          .fontSize(16)
+          .fontSize(14)
           .fontWeight(FontWeight.Medium)
           .layoutWeight(1)
       }
       .width('100%')
-      .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+      .padding({ left: 0, right: 0, top: 0, bottom: 6 })
       .backgroundColor('#ffffff')
 
       if (this.isLoading) {
@@ -137,26 +137,26 @@ struct WatchMyRequestsPage {
           .width('100%')
           .textAlign(TextAlign.Center)
       } else {
-        List({ space: 8 }) {
+        List({ space: 6 }) {
           ForEach(this.items, (row: WatchRequestRow) => {
             ListItem() {
               Column({ space: 4 }) {
                 Text(row.title)
-                  .fontSize(14)
+                  .fontSize(12)
                   .fontWeight(FontWeight.Medium)
                   .maxLines(2)
                   .fontColor(row.id === this.highlightId ? '#2563eb' : '#0f172a')
                 Row() {
-                  Text(row.statusLabel).fontSize(11).fontColor('#64748b')
-                  Text(row.timeShort).fontSize(11).fontColor('#94a3b8')
+                  Text(row.statusLabel).fontSize(10).fontColor('#64748b')
+                  Text(row.timeShort).fontSize(10).fontColor('#94a3b8')
                 }
                 .width('100%')
                 .justifyContent(FlexAlign.SpaceBetween)
               }
               .width('100%')
-              .padding(10)
+              .padding(8)
               .backgroundColor(row.id === this.highlightId ? '#eff6ff' : '#ffffff')
-              .borderRadius(12)
+              .borderRadius(10)
               .onClick(() => {
                 this.openDetail(row.id);
               })
@@ -165,12 +165,12 @@ struct WatchMyRequestsPage {
         }
         .layoutWeight(1)
         .width('100%')
-        .padding({ left: 10, right: 10, bottom: 10 })
+        .padding({ left: 0, right: 0, bottom: 0 })
       }
     }
     .width('100%')
     .height('100%')
     .backgroundColor('#f8fafc')
-    .padding({ top: 6 })
+    .padding({ top: 30, bottom: 30, left: 12, right: 12 })
   }
 }
