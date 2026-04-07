@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { NavBackButton } from '../../components/NavBackButton';
+import { WatchButton } from '../../components/WatchButton';
 import { getCurrentPosition } from '../../utils/LocationUtil';
 import { OrderApi, RequestApi } from '../../services/ApiService';
 import { DateUtil } from '../../utils/DateUtil';
@@ -181,12 +182,12 @@ struct WatchVolunteerRequestDetailPage {
       Row({ space: 8 }) {
         NavBackButton()
         Text('求助详情')
-          .fontSize(16)
+          .fontSize(14)
           .fontWeight(FontWeight.Medium)
           .layoutWeight(1)
       }
       .width('100%')
-      .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+      .padding({ left: 0, right: 0, top: 0, bottom: 6 })
       .backgroundColor('#ffffff')
 
       if (this.isLoading) {
@@ -201,19 +202,19 @@ struct WatchVolunteerRequestDetailPage {
         Scroll() {
           Column({ space: 10 }) {
             Text(this.req.typeLabel)
-              .fontSize(15)
+              .fontSize(13)
               .fontWeight(FontWeight.Medium)
             Text(this.req.statusLabel)
               .fontSize(11)
               .fontColor('#2563eb')
             Text(this.req.description)
-              .fontSize(12)
+              .fontSize(11)
               .fontColor('#334155')
             Text(this.req.location)
-              .fontSize(11)
+              .fontSize(10)
               .fontColor('#64748b')
             Text(`${this.req.seekerName} · ${this.req.timeAgo}`)
-              .fontSize(11)
+              .fontSize(10)
               .fontColor('#94a3b8')
             if (this.req.distanceKm !== undefined) {
               Text(`约 ${this.req.distanceKm.toFixed(1)} km`)
@@ -222,19 +223,18 @@ struct WatchVolunteerRequestDetailPage {
             }
 
             if (this.req.acceptEnabled) {
-              Button(this.isAccepting ? '接单中...' : '接单')
-                .width('100%')
-                .height(40)
-                .fontColor('#ffffff')
-                .backgroundColor('#2563eb')
-                .enabled(!this.isAccepting)
-                .onClick(() => {
-                  this.accept();
-                })
+              WatchButton({
+                text: this.isAccepting ? '接单中...' : '接单',
+                type: 'primary',
+                size: 'medium',
+                width: '100%',
+                enabled: !this.isAccepting,
+                onClick: () => { this.accept(); }
+              })
             }
           }
           .width('100%')
-          .padding(10)
+          .padding(0)
         }
         .layoutWeight(1)
         .align(Alignment.TopStart)
@@ -243,6 +243,6 @@ struct WatchVolunteerRequestDetailPage {
     .width('100%')
     .height('100%')
     .backgroundColor('#f8fafc')
-    .padding({ top: 6 })
+    .padding({ top: 30, bottom: 30, left: 12, right: 12 })
   }
 }
