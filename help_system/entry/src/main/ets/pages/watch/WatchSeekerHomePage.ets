@@ -5,7 +5,7 @@ import { WatchCircularLayout } from '../../components/WatchCircularLayout';
 import { WatchButton } from '../../components/WatchButton';
 
 /**
- * 求助者手表首页（壳）：进入一键紧急等能力，后续在此扩展闭环。
+ * 求助者手表首页：进入一键紧急等能力，后续在此扩展闭环
  */
 @Entry
 @Component

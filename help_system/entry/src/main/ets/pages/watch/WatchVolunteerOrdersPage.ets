@@ -34,7 +34,7 @@ struct WatchVolunteerOrdersPage {
     if (t.length === 0) {
       return fallback;
     }
-    if (/^[\?？�]+$/.test(t)) {
+    if (/^[\?？\uFFFD]+$/.test(t)) {
       return fallback;
     }
     return t;
@@ -43,13 +43,13 @@ struct WatchVolunteerOrdersPage {
   private statusLabel(s: string): string {
     switch (s) {
       case 'accepted':
-        return '已接�?;
+        return '已接单';
       case 'in-progress':
-        return '服务�?;
+        return '服务中';
       case 'completed':
-        return '已完�?;
+        return '已完成';
       case 'cancelled':
-        return '已取�?;
+        return '已取消';
       default:
         return s;
     }
@@ -112,7 +112,7 @@ struct WatchVolunteerOrdersPage {
       if (this.isLoading) {
         Column({ space: 6 }) {
           LoadingProgress().width(28).height(28)
-          Text('加载�?..').fontSize(11).fontColor('#64748b')
+          Text('加载中...').fontSize(11).fontColor('#64748b')
         }
         .layoutWeight(1)
         .width('100%')
@@ -156,18 +156,22 @@ struct WatchVolunteerOrdersPage {
       }
 
       WatchButton({
-        text: '刷新',
+        text: 'xxx',
         buttonType: 'secondary',
         buttonSize: 'small',
-        buttonWidth: '100%',
-        onClick: () => {
-          this.loadOrders();
-        }
+        buttonWidth: '100%'
       })
+        .onClick(() => {
+          this.xxx();
+        })
     }
     .width('100%')
     .height('100%')
     .backgroundColor('#f8fafc')
     .padding({ top: 30, bottom: 30, left: 12, right: 12 })
+  }
+
+  xxx() {
+    throw new Error('Method not implemented.');
   }
 }

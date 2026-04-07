@@ -6,7 +6,7 @@ import type { LoginRequest, LoginResponse } from '../../models/Auth';
 import { WatchButton } from '../../components/WatchButton';
 
 /**
- * 手表专用登录：仅已有账号短信登录，不承载注册/选角（与手机 LoginPage 隔离）�?
+ * 手表专用登录页：仅已有账号短信登录，不承载注册/选角（与手机 LoginPage 隔离）
  */
 @Entry
 @Component

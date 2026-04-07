@@ -36,7 +36,7 @@ struct WatchAccessibilityPage {
     Column({ space: 10 }) {
       Row({ space: 8 }) {
         NavBackButton()
-        Text('无障碍设�?)
+        Text('无障碍设置')
           .fontSize(14)
           .fontWeight(FontWeight.Bold)
           .layoutWeight(1)
@@ -44,7 +44,7 @@ struct WatchAccessibilityPage {
       .width('100%')
 
       Row() {
-        Text('大字�?)
+        Text('大字体')
           .fontSize(this.largeFontEnabled ? 14 : 12)
           .fontColor(this.highContrastEnabled ? '#000000' : '#334155')
           .layoutWeight(1)

@@ -7,7 +7,7 @@ import { WatchCircularLayout } from '../../components/WatchCircularLayout';
 import { WatchButton } from '../../components/WatchButton';
 
 /**
- * 手表启动：读 Token / 刷新资料，按账号角色进入对应首页（不在手表切换身份）�?
+ * 手表启动页：读取 Token / 刷新资料，按账号角色进入对应首页（不在手表切换身份）
  */
 @Entry
 @Component
@@ -109,7 +109,7 @@ struct WatchSplashPage {
         LoadingProgress()
           .width(28)
           .height(28)
-        Text('加载�?..')
+        Text('加载中...')
           .fontSize(12)
           .fontColor('#64748b')
       } else if (this.routeError.length > 0) {

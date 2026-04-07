@@ -7,7 +7,7 @@ import { DateUtil } from '../../utils/DateUtil';
 import type { VolunteerOrder } from '../../models/Order';
 
 /**
- * 手表：志愿者订单服务中 / 完成（对�?OrderApi，无 WebSocket）�?
+ * 手表：志愿者订单服务中 / 完成（对接 OrderApi，无 WebSocket）
  */
 @Entry
 @Component
@@ -55,7 +55,7 @@ struct WatchVolunteerServicePage {
   private formatElapsed(sec: number): string {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
-    return `${m}�?{s < 10 ? '0' : ''}${s}秒`;
+    return `${m}分${s < 10 ? '0' : ''}${s}秒`;
   }
 
   private async load(): Promise<void> {
@@ -79,13 +79,13 @@ struct WatchVolunteerServicePage {
   private statusLabel(s: string): string {
     switch (s) {
       case 'accepted':
-        return '已接�?;
+        return '已接单';
       case 'in-progress':
-        return '服务�?;
+        return '服务中';
       case 'completed':
-        return '已完�?;
+        return '已完成';
       case 'cancelled':
-        return '已取�?;
+        return '已取消';
       default:
         return s;
     }
@@ -99,7 +99,7 @@ struct WatchVolunteerServicePage {
     if (t.length === 0) {
       return fallback;
     }
-    if (/^[\?？�]+$/.test(t)) {
+    if (/^[\?？\uFFFD]+$/.test(t)) {
       return fallback;
     }
     return t;
@@ -112,7 +112,7 @@ struct WatchVolunteerServicePage {
     this.isUpdating = true;
     OrderApi.updateOrderStatus(this.orderId, 'in-progress')
       .then(() => {
-        promptAction.showToast({ message: '已开始服�?, duration: 1500 });
+        promptAction.showToast({ message: '已开始服务', duration: 1500 });
         this.load();
       })
       .catch((err: Error) => {
@@ -129,7 +129,7 @@ struct WatchVolunteerServicePage {
     }
     promptAction.showDialog({
       title: '完成服务',
-      message: '确认标记为已完成�?,
+      message: '确认标记为已完成？',
       buttons: [
         { text: '取消', color: '#666666' },
         { text: '完成', color: '#10b981' }
@@ -142,7 +142,7 @@ struct WatchVolunteerServicePage {
       OrderApi.completeOrder(this.orderId)
         .then(() => {
           this.clearTimer();
-          promptAction.showToast({ message: '服务已完�?, duration: 1500 });
+          promptAction.showToast({ message: '服务已完成', duration: 1500 });
           router.replaceUrl({
             url: 'pages/watch/WatchVolunteerReviewPage',
             params: { id: this.orderId }
@@ -175,13 +175,13 @@ struct WatchVolunteerServicePage {
       if (this.isLoading) {
         Column({ space: 8 }) {
           LoadingProgress().width(32).height(32)
-          Text('加载�?..').fontSize(13).fontColor('#64748b')
+          Text('加载中...').fontSize(13).fontColor('#64748b')
         }
         .layoutWeight(1)
         .width('100%')
         .justifyContent(FlexAlign.Center)
       } else if (!this.order) {
-        Text('无订单数�?)
+        Text('无订单数据')
           .layoutWeight(1)
           .fontColor('#94a3b8')
       } else {
@@ -193,18 +193,18 @@ struct WatchVolunteerServicePage {
             Text(this.statusLabel(this.order.status))
               .fontSize(11)
               .fontColor('#2563eb')
-            Text(this.safeText(this.order.location, '位置未填�?))
+            Text(this.safeText(this.order.location, '位置未填写'))
               .fontSize(10)
               .fontColor('#64748b')
-            Text(`求助者：${this.safeText(this.order.helpSeekerName, '求助�?)}`)
+            Text(`求助者：${this.safeText(this.order.helpSeekerName, '求助者')}`)
               .fontSize(10)
               .fontColor('#64748b')
-            Text(`接单时间�?{DateUtil.format(this.order.acceptedAt, 'MM-DD HH:mm')}`)
+            Text(`接单时间：${DateUtil.format(this.order.acceptedAt, 'MM-DD HH:mm')}`)
               .fontSize(10)
               .fontColor('#94a3b8')
 
             if (this.order.status === 'in-progress') {
-              Text(`本次计时�?{this.formatElapsed(this.elapsedSec)}`)
+              Text(`本次计时：${this.formatElapsed(this.elapsedSec)}`)
                 .fontSize(12)
                 .fontWeight(FontWeight.Medium)
                 .fontColor('#0f172a')
@@ -212,13 +212,13 @@ struct WatchVolunteerServicePage {
 
             if (this.order.status === 'accepted') {
               WatchButton({
-                text: this.isUpdating ? '...' : '开始服�?,
+                text: this.isUpdating ? '...' : '开始服务',
                 buttonType: 'primary',
                 buttonSize: 'medium',
                 buttonWidth: '100%',
-                buttonEnabled: !this.isUpdating,
-                onClick: () => { this.startService(); }
+                buttonEnabled: !this.isUpdating
               })
+              .onClick(() => { this.startService(); })
             }
 
             if (this.order.status === 'in-progress') {
@@ -227,25 +227,25 @@ struct WatchVolunteerServicePage {
                 buttonType: 'primary',
                 buttonSize: 'medium',
                 buttonWidth: '100%',
-                buttonEnabled: !this.isUpdating,
-                onClick: () => { this.completeService(); }
+                buttonEnabled: !this.isUpdating
               })
+              .onClick(() => { this.completeService(); })
             }
 
             if (this.order.status === 'completed') {
               WatchButton({
-                text: '去评�?,
+                text: '去评价',
                 buttonType: 'secondary',
                 buttonSize: 'medium',
-                buttonWidth: '100%',
-                onClick: () => {
-                  router.pushUrl({
-                    url: 'pages/watch/WatchVolunteerReviewPage',
-                    params: { id: this.orderId }
-                  }).catch((err: Error) => {
-                    console.error('nav review failed:', err);
-                  });
-                }
+                buttonWidth: '100%'
+              })
+              .onClick(() => {
+                router.pushUrl({
+                  url: 'pages/watch/WatchVolunteerReviewPage',
+                  params: { id: this.orderId }
+                }).catch((err: Error) => {
+                  console.error('nav review failed:', err);
+                });
               })
             }
           }

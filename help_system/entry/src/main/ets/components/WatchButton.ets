@@ -14,17 +14,10 @@
  * 使用示例：
  * WatchButton({
  *   text: '确认',
- *   size: 'medium',
- *   type: 'primary',
- *   onClick: () => { this.handleConfirm() }
+ *   buttonSize: 'medium',
+ *   buttonType: 'primary'
  * })
- * 
- * WatchButton({
- *   text: '紧急求助',
- *   size: 'large', 
- *   type: 'emergency',
- *   onClick: () => { this.handleEmergency() }
- * })
+ * .onClick(() => { this.handleConfirm() })
  * 
  * 需求：3.1, 3.2, 3.3
  * 属性：3 - 触控区域规范, 8 - 触控反馈
@@ -72,17 +65,12 @@ export struct WatchButton {
   
   // 组件属性
   @Prop text: string;                                    // 按钮文本
-  @Prop size: WatchButtonSize = 'medium';               // 按钮尺寸
-  @Prop type: WatchButtonType = 'primary';              // 按钮类型
-  @Prop onClick: () => void;                            // 点击回调函数
-  @Prop enabled: boolean = true;                        // 是否启用按钮
-  @Prop accessibilityLabel?: string;                    // 无障碍描述文本
-  @Prop width?: Length;                                 // 自定义宽度（可选）
-  @Prop height?: Length;                                // 自定义高度（可选）
-  
-  // 内部状态
-  @State isPressed: boolean = false;                    // 按钮按下状态
-  @State pressStartTime: number = 0;                    // 按下开始时间
+  @Prop buttonSize: WatchButtonSize = 'medium';         // 按钮尺寸
+  @Prop buttonType: WatchButtonType = 'primary';        // 按钮类型
+  @Prop buttonEnabled: boolean = true;                  // 是否启用按钮
+  @Prop accessibilityLabel: string = '';                // 无障碍描述文本
+  @Prop buttonWidth: Length = 'auto';                   // 自定义宽度（可选）
+  @Prop buttonHeight: Length = 'auto';                  // 自定义高度（可选）
   
   private accessibilityManager = AccessibilityManager.getInstance();
 
@@ -90,66 +78,85 @@ export struct WatchButton {
    * 获取按钮尺寸配置
    */
   private getSizeConfig(): ButtonSizeConfig {
-    const configs: Record<WatchButtonSize, ButtonSizeConfig> = {
-      small: {
-        width: 44,   // 最小触控区域
-        height: 44,
-        fontSize: 14,
-        largeFontSize: 16
-      },
-      medium: {
-        width: 56,   // 标准尺寸
-        height: 56,
-        fontSize: 16,
-        largeFontSize: 18
-      },
-      large: {
-        width: 68,   // 大尺寸，适合重要操作
-        height: 68,
-        fontSize: 18,
-        largeFontSize: 20
-      }
-    };
-    return configs[this.size];
+    switch (this.buttonSize) {
+      case 'small':
+        return {
+          width: 44,   // 最小触控区域
+          height: 44,
+          fontSize: 14,
+          largeFontSize: 16
+        };
+      case 'medium':
+        return {
+          width: 56,   // 标准尺寸
+          height: 56,
+          fontSize: 16,
+          largeFontSize: 18
+        };
+      case 'large':
+        return {
+          width: 68,   // 大尺寸，适合重要操作
+          height: 68,
+          fontSize: 18,
+          largeFontSize: 20
+        };
+      default:
+        return {
+          width: 56,
+          height: 56,
+          fontSize: 16,
+          largeFontSize: 18
+        };
+    }
   }
 
   /**
    * 获取按钮颜色配置
    */
   private getColorConfig(): ButtonColorConfig {
-    const configs: Record<WatchButtonType, ButtonColorConfig> = {
-      primary: {
-        backgroundColor: '#2563eb',
-        fontColor: '#ffffff',
-        highContrastBg: '#000000',
-        highContrastFont: '#ffffff',
-        highContrastBorder: '#ffffff'
-      },
-      secondary: {
-        backgroundColor: '#64748b',
-        fontColor: '#ffffff',
-        borderColor: '#64748b',
-        highContrastBg: '#ffffff',
-        highContrastFont: '#000000',
-        highContrastBorder: '#000000'
-      },
-      emergency: {
-        backgroundColor: '#dc2626',
-        fontColor: '#ffffff',
-        highContrastBg: '#ff0000',
-        highContrastFont: '#ffffff',
-        highContrastBorder: '#ffffff'
-      }
-    };
-    return configs[this.type];
+    switch (this.buttonType) {
+      case 'primary':
+        return {
+          backgroundColor: '#2563eb',
+          fontColor: '#ffffff',
+          highContrastBg: '#000000',
+          highContrastFont: '#ffffff',
+          highContrastBorder: '#ffffff'
+        };
+      case 'secondary':
+        return {
+          backgroundColor: '#64748b',
+          fontColor: '#ffffff',
+          borderColor: '#64748b',
+          highContrastBg: '#ffffff',
+          highContrastFont: '#000000',
+          highContrastBorder: '#000000'
+        };
+      case 'emergency':
+        return {
+          backgroundColor: '#dc2626',
+          fontColor: '#ffffff',
+          highContrastBg: '#ff0000',
+          highContrastFont: '#ffffff',
+          highContrastBorder: '#ffffff'
+        };
+      default:
+        return {
+          backgroundColor: '#2563eb',
+          fontColor: '#ffffff',
+          highContrastBg: '#000000',
+          highContrastFont: '#ffffff',
+          highContrastBorder: '#ffffff'
+        };
+    }
   }
 
   /**
    * 计算实际按钮宽度
    */
   private getActualWidth(): Length {
-    if (this.width) {
-      return this.width;
+    if (this.buttonWidth !== 'auto') {
+      return this.buttonWidth;
     }
     const config = this.getSizeConfig();
     // 在大字体模式下适当增加宽度以容纳更大的文字
@@ -160,8 +167,8 @@ export struct WatchButton {
    * 计算实际按钮高度
    */
   private getActualHeight(): Length {
-    if (this.height) {
-      return this.height;
+    if (this.buttonHeight !== 'auto') {
+      return this.buttonHeight;
     }
     const config = this.getSizeConfig();
     // 确保最小触控区域44dp，在大字体模式下适当增加
@@ -184,17 +191,12 @@ export struct WatchButton {
   private getBackgroundColor(): string {
     const colorConfig = this.getColorConfig();
     
-    if (!this.enabled) {
+    if (!this.buttonEnabled) {
       return this.highContrastEnabled ? '#cccccc' : '#e5e7eb';
     }
     
     if (this.highContrastEnabled) {
       return colorConfig.highContrastBg;
-    }
-    
-    // 按下状态时稍微变暗
-    if (this.isPressed) {
-      return this.darkenColor(colorConfig.backgroundColor, 0.1);
     }
     
     return colorConfig.backgroundColor;
@@ -206,7 +208,7 @@ export struct WatchButton {
   private getFontColor(): string {
     const colorConfig = this.getColorConfig();
     
-    if (!this.enabled) {
+    if (!this.buttonEnabled) {
       return this.highContrastEnabled ? '#666666' : '#9ca3af';
     }
     
@@ -231,7 +233,7 @@ export struct WatchButton {
       };
     }
     
-    if (this.type === 'secondary') {
+    if (this.buttonType === 'secondary') {
       return {
         width: 1,
         color: colorConfig.borderColor || colorConfig.backgroundColor,
@@ -243,85 +245,21 @@ export struct WatchButton {
   }
 
   /**
-   * 颜色变暗工具函数
-   */
-  private darkenColor(color: string, amount: number): string {
-    // 简单的颜色变暗实现
-    if (color.startsWith('#')) {
-      const hex = color.slice(1);
-      const num = parseInt(hex, 16);
-      const r = Math.max(0, Math.floor((num >> 16) * (1 - amount)));
-      const g = Math.max(0, Math.floor(((num >> 8) & 0x00FF) * (1 - amount)));
-      const b = Math.max(0, Math.floor((num & 0x0000FF) * (1 - amount)));
-      return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-    }
-    return color;
-  }
-
-  /**
-   * 处理按钮按下
-   */
-  private handleTouchStart(): void {
-    if (!this.enabled) {
-      return;
-    }
-    
-    this.isPressed = true;
-    this.pressStartTime = Date.now();
-    
-    // 触发震动反馈
-    this.accessibilityManager.triggerVibration();
-  }
-
-  /**
-   * 处理按钮释放
-   */
-  private handleTouchEnd(): void {
-    if (!this.enabled) {
-      return;
-    }
-    
-    const pressDuration = Date.now() - this.pressStartTime;
-    
-    // 确保视觉反馈至少持续100ms（需求8.1）
-    const minFeedbackDuration = 100;
-    if (pressDuration < minFeedbackDuration) {
-      setTimeout(() => {
-        this.isPressed = false;
-      }, minFeedbackDuration - pressDuration);
-    } else {
-      this.isPressed = false;
-    }
-    
-    // 执行点击回调
-    if (this.onClick) {
-      this.onClick();
-    }
-  }
-
-  /**
-   * 处理按钮取消（手指移出按钮区域）
-   */
-  private handleTouchCancel(): void {
-    this.isPressed = false;
-  }
-
-  /**
    * 获取无障碍描述文本
    */
   private getAccessibilityText(): string {
-    if (this.accessibilityLabel) {
+    if (this.accessibilityLabel && this.accessibilityLabel.length > 0) {
       return this.accessibilityLabel;
     }
     
     // 根据按钮类型生成默认描述
-    const typeDescriptions: Record<WatchButtonType, string> = {
-      primary: '主要操作按钮',
-      secondary: '次要操作按钮', 
-      emergency: '紧急操作按钮'
+    const typeDescriptions: Record<string, string> = {
+      'primary': '主要操作按钮',
+      'secondary': '次要操作按钮', 
+      'emergency': '紧急操作按钮'
     };
     
-    return `${this.text}，${typeDescriptions[this.type]}`;
+    return `${this.text}，${typeDescriptions[this.buttonType] || '操作按钮'}`;
   }
 
   build() {
@@ -334,22 +272,8 @@ export struct WatchButton {
       .height(this.getActualHeight())
       .border(this.getBorderConfig())
       .borderRadius(8)
-      .enabled(this.enabled)
-      .opacity(this.enabled ? 1.0 : 0.5)
-      // 触控事件处理
-      .onTouch((event: TouchEvent) => {
-        switch (event.type) {
-          case TouchType.Down:
-            this.handleTouchStart();
-            break;
-          case TouchType.Up:
-            this.handleTouchEnd();
-            break;
-          case TouchType.Cancel:
-            this.handleTouchCancel();
-            break;
-        }
-      })
+      .enabled(this.buttonEnabled)
+      .opacity(this.buttonEnabled ? 1.0 : 0.5)
       // 无障碍支持
       .accessibilityText(this.getAccessibilityText())
       .accessibilityDescription(this.getAccessibilityText())

@@ -32,7 +32,7 @@ struct WatchVolunteerNearbyPage {
     if (t.length === 0) {
       return fallback;
     }
-    if (/^[\?？\u{FFFD}]+$/u.test(t)) {
+    if (/^[\?？\uFFFD]+$/u.test(t)) {
       return fallback;
     }
     return t;
@@ -45,7 +45,7 @@ struct WatchVolunteerNearbyPage {
       case 'companion':
         return '出行';
       case 'emergency':
-        return '紧�?;
+        return '紧急';
       default:
         return '求助';
     }
@@ -70,7 +70,7 @@ struct WatchVolunteerNearbyPage {
         this.requests = res.items.map((it: HelpRequestWithDistance): ReqRow => ({
           id: it.request.id,
           title: this.safeText(it.request.title, this.typeLabel(it.request.type)),
-          sub: this.safeText(it.request.location, '位置未填�?),
+          sub: this.safeText(it.request.location, '位置未填写'),
           distanceKm: it.distance
         }));
       } catch (_) {
@@ -79,7 +79,7 @@ struct WatchVolunteerNearbyPage {
         this.requests = res.items.map((r: HelpRequest): ReqRow => ({
           id: r.id,
           title: this.safeText(r.title, this.typeLabel(r.type)),
-          sub: this.safeText(r.location, '位置未填�?)
+          sub: this.safeText(r.location, '位置未填写')
         }));
       }
     } catch (e) {
@@ -114,7 +114,7 @@ struct WatchVolunteerNearbyPage {
       if (this.isLoading) {
         Column({ space: 6 }) {
           LoadingProgress().width(28).height(28)
-          Text('加载�?..').fontSize(11).fontColor('#64748b')
+          Text('加载中...').fontSize(11).fontColor('#64748b')
         }
         .layoutWeight(1)
         .width('100%')
@@ -140,7 +140,7 @@ struct WatchVolunteerNearbyPage {
                   .fontColor('#64748b')
                   .maxLines(1)
                 if (r.distanceKm !== undefined) {
-                  Text(`�?${r.distanceKm.toFixed(1)} km`)
+                  Text(`距 ${r.distanceKm.toFixed(1)} km`)
                     .fontSize(10)
                     .fontColor('#94a3b8')
                 }
@@ -160,18 +160,22 @@ struct WatchVolunteerNearbyPage {
       }
 
       WatchButton({
-        text: '刷新',
+        text: 'xxx',
         buttonType: 'secondary',
         buttonSize: 'small',
-        buttonWidth: '100%',
-        onClick: () => {
-          this.loadRequests();
-        }
+        buttonWidth: '100%'
       })
+        .onClick(() => {
+          this.xxx();
+        })
     }
     .width('100%')
     .height('100%')
     .backgroundColor('#f8fafc')
     .padding({ top: 30, bottom: 30, left: 12, right: 12 })
+  }
+
+  xxx() {
+    throw new Error('Method not implemented.');
   }
 }
