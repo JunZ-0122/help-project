@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI';
 import { AuthService } from '../../services/AuthService';
 import { StorageUtil } from '../../utils/StorageUtil';
 import type { LoginRequest, LoginResponse } from '../../models/Auth';
+import { WatchButton } from '../../components/WatchButton';
 
 /**
  * 手表专用登录：仅已有账号短信登录，不承载注册/选角（与手机 LoginPage 隔离）。
@@ -191,25 +192,25 @@ struct WatchLoginPage {
       Scroll() {
         Column({ space: 10 }) {
           Text('登录')
-            .fontSize(this.largeFontEnabled ? 20 : 18)
+            .fontSize(this.largeFontEnabled ? 16 : 14)
             .fontWeight(FontWeight.Bold)
             .fontColor(this.highContrastEnabled ? '#000000' : '#0f172a')
             .width('100%')
             .textAlign(TextAlign.Center)
 
           Text('请使用已在手机端注册的账号')
-            .fontSize(12)
+            .fontSize(10)
             .fontColor(this.highContrastEnabled ? '#000000' : '#475569')
             .width('100%')
             .textAlign(TextAlign.Center)
 
           Column({ space: 6 }) {
             Text('手机号')
-              .fontSize(14)
+              .fontSize(12)
               .fontColor(this.highContrastEnabled ? '#000000' : '#334155')
               .alignSelf(ItemAlign.Start)
             TextInput({ text: this.phone, placeholder: '请输入手机号' })
-              .height(40)
+              .height(32)
               .maxLength(11)
               .type(InputType.PhoneNumber)
               .fontSize(14)
@@ -234,13 +235,13 @@ struct WatchLoginPage {
 
           Column({ space: 6 }) {
             Text('验证码')
-              .fontSize(14)
+              .fontSize(12)
               .fontColor(this.highContrastEnabled ? '#000000' : '#334155')
               .alignSelf(ItemAlign.Start)
             Row({ space: 8 }) {
               TextInput({ text: this.code, placeholder: '验证码' })
                 .layoutWeight(1)
-                .height(40)
+                .height(32)
                 .maxLength(6)
                 .type(InputType.Number)
                 .fontSize(14)
@@ -257,16 +258,15 @@ struct WatchLoginPage {
                 .border(this.highContrastEnabled
                   ? { width: 2, color: '#000000' }
                   : { width: this.activeField === 'code' ? 2 : 1, color: this.activeField === 'code' ? '#2563eb' : '#cbd5e1' })
-              Button(this.countdown > 0 ? `${this.countdown}秒` : '获取验证码')
-                .height(40)
-                .fontSize(12)
-                .fontColor(this.highContrastEnabled ? '#000000' : '#ffffff')
-                .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#3b82f6')
-                .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
-                .enabled(this.phone.length === 11 && this.countdown === 0)
-                .onClick(() => {
+              WatchButton({
+                text: this.countdown > 0 ? `${this.countdown}秒` : '获取验证码',
+                type: 'secondary',
+                size: 'small',
+                enabled: this.phone.length === 11 && this.countdown === 0,
+                onClick: () => {
                   this.handleSendCode();
-                })
+                }
+              })
             }
           }
           .width('100%')
@@ -274,34 +274,34 @@ struct WatchLoginPage {
             this.activeField = 'code';
           })
 
-          Column({ space: 6 }) {
-            Row({ space: 8 }) {
-              Button('1').layoutWeight(1).height(36).onClick(() => { this.appendDigit('1'); })
-              Button('2').layoutWeight(1).height(36).onClick(() => { this.appendDigit('2'); })
-              Button('3').layoutWeight(1).height(36).onClick(() => { this.appendDigit('3'); })
+          Column({ space: 4 }) {
+            Row({ space: 4 }) {
+              Button('1').layoutWeight(1).height(28).onClick(() => { this.appendDigit('1'); })
+              Button('2').layoutWeight(1).height(28).onClick(() => { this.appendDigit('2'); })
+              Button('3').layoutWeight(1).height(28).onClick(() => { this.appendDigit('3'); })
             }
-            Row({ space: 8 }) {
-              Button('4').layoutWeight(1).height(36).onClick(() => { this.appendDigit('4'); })
-              Button('5').layoutWeight(1).height(36).onClick(() => { this.appendDigit('5'); })
-              Button('6').layoutWeight(1).height(36).onClick(() => { this.appendDigit('6'); })
+            Row({ space: 4 }) {
+              Button('4').layoutWeight(1).height(28).onClick(() => { this.appendDigit('4'); })
+              Button('5').layoutWeight(1).height(28).onClick(() => { this.appendDigit('5'); })
+              Button('6').layoutWeight(1).height(28).onClick(() => { this.appendDigit('6'); })
             }
-            Row({ space: 8 }) {
-              Button('7').layoutWeight(1).height(36).onClick(() => { this.appendDigit('7'); })
-              Button('8').layoutWeight(1).height(36).onClick(() => { this.appendDigit('8'); })
-              Button('9').layoutWeight(1).height(36).onClick(() => { this.appendDigit('9'); })
+            Row({ space: 4 }) {
+              Button('7').layoutWeight(1).height(28).onClick(() => { this.appendDigit('7'); })
+              Button('8').layoutWeight(1).height(28).onClick(() => { this.appendDigit('8'); })
+              Button('9').layoutWeight(1).height(28).onClick(() => { this.appendDigit('9'); })
             }
-            Row({ space: 8 }) {
+            Row({ space: 4 }) {
               Button('清空')
                 .layoutWeight(1)
-                .height(36)
+                .height(28)
                 .fontSize(12)
                 .backgroundColor('#e2e8f0')
                 .fontColor('#334155')
                 .onClick(() => { this.clearActiveField(); })
-              Button('0').layoutWeight(1).height(36).onClick(() => { this.appendDigit('0'); })
+              Button('0').layoutWeight(1).height(28).onClick(() => { this.appendDigit('0'); })
               Button('删除')
                 .layoutWeight(1)
-                .height(36)
+                .height(28)
                 .fontSize(12)
                 .backgroundColor('#e2e8f0')
                 .fontColor('#334155')
@@ -310,16 +310,16 @@ struct WatchLoginPage {
           }
           .width('100%')
 
-          Button(this.isLoading ? '登录中...' : '登录')
-            .width('100%')
-            .height(42)
-            .fontColor(this.highContrastEnabled ? '#000000' : '#ffffff')
-            .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#2563eb')
-            .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
-            .enabled(this.phone.length === 11 && this.code.length > 0 && !this.isLoading)
-            .onClick(() => {
+          WatchButton({
+            text: this.isLoading ? '登录中...' : '登录',
+            type: 'primary',
+            size: 'medium',
+            width: '100%',
+            enabled: this.phone.length === 11 && this.code.length > 0 && !this.isLoading,
+            onClick: () => {
               this.handleLogin();
-            })
+            }
+          })
         }
         .width('100%')
         .padding(12)
@@ -336,6 +336,6 @@ struct WatchLoginPage {
     .width('100%')
     .height('100%')
     .backgroundColor('#f8fafc')
-    .padding(8)
+    .padding({ left: 12, right: 12, top: 30, bottom: 30 })
   }
 }
