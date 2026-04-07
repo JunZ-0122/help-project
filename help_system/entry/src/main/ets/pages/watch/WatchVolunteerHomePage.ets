@@ -1,155 +1,79 @@
 import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
-import { getCurrentPosition, requestLocationPermission } from '../../utils/LocationUtil';
-import type { LocationPoint } from '../../utils/LocationUtil';
-import { HelpRequestWithDistance, OrderApi, RequestApi, UserApi, type RequestListFilters } from '../../services/ApiService';
 import { AuthService } from '../../services/AuthService';
-import type { HelpRequest } from '../../models/Request';
-import type { VolunteerOrder } from '../../models/Order';
+import { WatchCircularLayout } from '../../components/WatchCircularLayout';
+import { WatchButton } from '../../components/WatchButton';
+import { VolunteerApi, UserApi } from '../../services/ApiService';
+import { StorageUtil } from '../../utils/StorageUtil';
+import type { VolunteerStatistics } from '../../models/Common';
+import type { UserProfile } from '../../models/User';
 
-interface ReqRow {
-  id: string;
-  title: string;
-  sub: string;
-  distanceKm?: number;
-}
-
-interface OrdRow {
-  orderId: string;
-  title: string;
-  status: string;
-}
-
-/**
- * 手表：志愿者首页 — 附近待接求助 + 进行中订单（接口与手机 VolunteerHomePage 一致）。
- */
 @Entry
 @Component
 struct WatchVolunteerHomePage {
-  @State requests: ReqRow[] = [];
-  @State orders: OrdRow[] = [];
-  @State isLoading: boolean = true;
+  @State stats: VolunteerStatistics | null = null;
+  @State isOnline: boolean = false;
+  @State isTogglingStatus: boolean = false;
 
   aboutToAppear(): void {
-    this.loadAll();
+    this.loadData();
   }
 
-  private async loadAll(): Promise<void> {
-    this.isLoading = true;
-    await Promise.all([this.loadRequests(), this.loadOrders()]);
-    this.isLoading = false;
+  onPageShow(): void {
+    this.loadData();
   }
 
-  private async loadRequests(): Promise<void> {
+  private async loadData(): Promise<void> {
     try {
-      await requestLocationPermission();
-      let pos = await getCurrentPosition();
-      if (!pos) {
-        const fallback: LocationPoint = { latitude: 39.9042, longitude: 116.4074 };
-        pos = fallback;
+      const s = await VolunteerApi.getStatistics();
+      this.stats = s;
+    } catch (_) {
+      // ignore
+    }
+    try {
+      const user: UserProfile | null = await StorageUtil.get<UserProfile>('user');
+      if (user && user.status) {
+        this.isOnline = user.status === 'online';
       }
-      try {
-        await UserApi.reportLocation(pos.latitude, pos.longitude, undefined, 'watch');
-      } catch (_) {
-        // ignore
-      }
-      try {
-        const res = await RequestApi.getNearbyRequests(1, 15, pos.latitude, pos.longitude);
-        this.requests = res.items.map((it: HelpRequestWithDistance): ReqRow => this.mapNearbyToReqRow(it));
-      } catch (_) {
-        const pendingFilter: RequestListFilters = { status: 'pending' };
-        const res = await RequestApi.getRequests(1, 15, pendingFilter);
-        this.requests = res.items.map((r: HelpRequest): ReqRow => this.mapHelpRequestToReqRow(r));
-      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  private async toggleOnline(): Promise<void> {
+    if (this.isTogglingStatus) {
+      return;
+    }
+    this.isTogglingStatus = true;
+    const newStatus = this.isOnline ? 'offline' : 'online';
+    try {
+      const updated = await UserApi.updateUserProfile({ status: newStatus } as Partial<UserProfile>);
+      await StorageUtil.set('user', updated);
+      this.isOnline = newStatus === 'online';
+      promptAction.showToast({ message: this.isOnline ? '已上线' : '已离线', duration: 1500 });
     } catch (e) {
       const err = e as Error;
-      console.error('watch load requests failed:', err);
+      promptAction.showToast({ message: err.message || '操作失败', duration: 2000 });
+    } finally {
+      this.isTogglingStatus = false;
     }
   }
 
-  private async loadOrders(): Promise<void> {
-    try {
-      const list: VolunteerOrder[] = await OrderApi.getMyOrders();
-      const active = list.filter(
-        (o: VolunteerOrder) => o.status === 'accepted' || o.status === 'in-progress'
-      );
-      this.orders = active.map((o: VolunteerOrder): OrdRow => this.mapOrderToOrdRow(o));
-    } catch (e) {
-      const err = e as Error;
-      console.error('watch load orders failed:', err);
-    }
-  }
-
-  private mapNearbyToReqRow(it: HelpRequestWithDistance): ReqRow {
-    const row: ReqRow = {
-      id: it.request.id,
-      title: this.safeText(it.request.title, this.typeLabel(it.request.type)),
-      sub: this.safeText(it.request.location, '位置未填写'),
-      distanceKm: it.distance
-    };
-    return row;
-  }
-
-  private mapHelpRequestToReqRow(r: HelpRequest): ReqRow {
-    const row: ReqRow = {
-      id: r.id,
-      title: this.safeText(r.title, this.typeLabel(r.type)),
-      sub: this.safeText(r.location, '位置未填写')
-    };
-    return row;
-  }
-
-  private mapOrderToOrdRow(o: VolunteerOrder): OrdRow {
-    const row: OrdRow = {
-      orderId: o.id,
-      title: this.safeText(o.title, '订单'),
-      status: o.status
-    };
-    return row;
-  }
-
-  private safeText(value: string | undefined, fallback: string): string {
-    if (!value) {
-      return fallback;
-    }
-    const t = value.trim();
-    if (t.length === 0) {
-      return fallback;
-    }
-    if (/^[\?？�]+$/.test(t)) {
-      return fallback;
-    }
-    return t;
-  }
-
-  private typeLabel(t: string): string {
-    switch (t) {
-      case 'medical':
-        return '就医';
-      case 'companion':
-        return '出行';
-      case 'emergency':
-        return '紧急';
-      default:
-        return '求助';
-    }
-  }
-
-  private openRequest(id: string): void {
-    router.pushUrl({
-      url: 'pages/watch/WatchVolunteerRequestDetailPage',
-      params: { id: id }
-    }).catch((err: Error) => {
-      console.error('nav failed:', err);
+  private goNearby(): void {
+    router.pushUrl({ url: 'pages/watch/WatchVolunteerNearbyPage' }).catch((err: Error) => {
+      console.error('nav nearby failed:', err);
     });
   }
 
-  private openOrder(orderId: string): void {
-    router.pushUrl({
-      url: 'pages/watch/WatchVolunteerServicePage',
-      params: { id: orderId }
-    }).catch((err: Error) => {
-      console.error('nav failed:', err);
+  private goOrders(): void {
+    router.pushUrl({ url: 'pages/watch/WatchVolunteerOrdersPage' }).catch((err: Error) => {
+      console.error('nav orders failed:', err);
+    });
+  }
+
+  private goSettings(): void {
+    router.pushUrl({ url: 'pages/watch/WatchSettingsPage' }).catch((err: Error) => {
+      console.error('nav settings failed:', err);
     });
   }
 
@@ -162,119 +86,91 @@ struct WatchVolunteerHomePage {
   }
 
   build() {
-    Column() {
+    WatchCircularLayout({
+      centerRadius: 120,
+      edgePadding: 16,
+      content: () => {
+        this.pageContent()
+      }
+    })
+  }
+
+  @Builder
+  pageContent() {
+    Column({ space: 6 }) {
       Text('志愿者')
-        .fontSize(16)
+        .fontSize(15)
         .fontWeight(FontWeight.Bold)
         .width('100%')
         .textAlign(TextAlign.Center)
-        .padding({ top: 6, bottom: 6 })
 
-      if (this.isLoading) {
-        Column({ space: 8 }) {
-          LoadingProgress().width(32).height(32)
-          Text('加载中...').fontSize(12).fontColor('#64748b')
+      if (this.stats) {
+        Row({ space: 6 }) {
+          Text(`${this.stats.serviceCount}次`)
+            .fontSize(10)
+            .fontColor('#64748b')
+          Text('|')
+            .fontSize(10)
+            .fontColor('#cbd5e1')
+          Text(`${this.stats.satisfactionPercent !== null ? this.stats.satisfactionPercent + '%' : '--'}`)
+            .fontSize(10)
+            .fontColor('#64748b')
         }
-        .layoutWeight(1)
         .width('100%')
         .justifyContent(FlexAlign.Center)
-      } else {
-        Scroll() {
-          Column({ space: 12 }) {
-            Text('附近待接')
-              .fontSize(13)
-              .fontWeight(FontWeight.Medium)
-              .width('100%')
-
-            if (this.requests.length === 0) {
-              Text('暂无待接求助').fontSize(12).fontColor('#94a3b8')
-            } else {
-              ForEach(this.requests, (r: ReqRow) => {
-                Column({ space: 4 }) {
-                  Text(r.title)
-                    .fontSize(13)
-                    .fontWeight(FontWeight.Medium)
-                    .maxLines(2)
-                  Text(r.sub)
-                    .fontSize(10)
-                    .fontColor('#64748b')
-                    .maxLines(2)
-                  if (r.distanceKm !== undefined) {
-                    Text(`约 ${r.distanceKm.toFixed(1)} km`)
-                      .fontSize(10)
-                      .fontColor('#94a3b8')
-                  }
-                }
-                .width('100%')
-                .padding(8)
-                .backgroundColor('#ffffff')
-                .borderRadius(10)
-                .onClick(() => {
-                  this.openRequest(r.id);
-                })
-              }, (r: ReqRow) => r.id)
-            }
-
-            Text('进行中的订单')
-              .fontSize(13)
-              .fontWeight(FontWeight.Medium)
-              .width('100%')
-              .margin({ top: 8 })
-
-            if (this.orders.length === 0) {
-              Text('暂无').fontSize(12).fontColor('#94a3b8')
-            } else {
-              ForEach(this.orders, (o: OrdRow) => {
-                Row() {
-                  Column({ space: 4 }) {
-                    Text(o.title).fontSize(13).maxLines(1)
-                    Text(o.status === 'accepted' ? '已接单' : '服务中')
-                      .fontSize(10)
-                      .fontColor('#2563eb')
-                  }
-                  .alignItems(HorizontalAlign.Start)
-                  .layoutWeight(1)
-                }
-                .width('100%')
-                .padding(8)
-                .backgroundColor('#eff6ff')
-                .borderRadius(10)
-                .onClick(() => {
-                  this.openOrder(o.orderId);
-                })
-              }, (o: OrdRow) => o.orderId)
-            }
-
-            Button('刷新')
-              .width('100%')
-              .height(36)
-              .fontSize(13)
-              .margin({ top: 8 })
-              .onClick(() => {
-                this.loadAll();
-              })
-
-            Button('退出登录')
-              .width('100%')
-              .height(36)
-              .fontSize(13)
-              .backgroundColor('#f1f5f9')
-              .fontColor('#334155')
-              .onClick(() => {
-                this.logout();
-              })
-          }
-          .width('100%')
-          .padding(10)
-        }
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
-        .align(Alignment.TopStart)
       }
+
+      WatchButton({
+        text: this.isTogglingStatus ? '...' : (this.isOnline ? '在线 (点击离线)' : '离线 (点击上线)'),
+        type: this.isOnline ? 'primary' : 'secondary',
+        size: 'small',
+        width: '100%',
+        onClick: () => {
+          this.toggleOnline();
+        }
+      })
+
+      WatchButton({
+        text: '查看附近求助',
+        type: 'primary',
+        size: 'medium',
+        width: '100%',
+        onClick: () => {
+          this.goNearby();
+        }
+      })
+
+      WatchButton({
+        text: '我的服务',
+        type: 'primary',
+        size: 'medium',
+        width: '100%',
+        onClick: () => {
+          this.goOrders();
+        }
+      })
+
+      Row({ space: 6 }) {
+        WatchButton({
+          text: '设置',
+          type: 'secondary',
+          size: 'small',
+          onClick: () => {
+            this.goSettings();
+          }
+        })
+        WatchButton({
+          text: '退出',
+          type: 'secondary',
+          size: 'small',
+          onClick: () => {
+            this.logout();
+          }
+        })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
     }
     .width('100%')
-    .height('100%')
-    .backgroundColor('#f8fafc')
-    .padding({ top: 4 })
   }
 }
