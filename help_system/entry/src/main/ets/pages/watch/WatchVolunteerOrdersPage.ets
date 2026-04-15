@@ -98,16 +98,22 @@ struct WatchVolunteerOrdersPage {
   }
 
   build() {
-    Column() {
+    Column({ space: 6 }) {
       Row({ space: 8 }) {
         NavBackButton()
-        Text('我的服务')
-          .fontSize(14)
-          .fontWeight(FontWeight.Medium)
-          .layoutWeight(1)
+        Column({ space: 2 }) {
+          Text('我的服务')
+            .fontSize(14)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#0f172a')
+          Text(this.orders.length > 0 ? `${this.orders.length}条服务记录` : '查看服务记录')
+            .fontSize(9)
+            .fontColor('#64748b')
+        }
+        .layoutWeight(1)
       }
       .width('100%')
-      .padding({ left: 0, right: 0, top: 0, bottom: 6 })
+      .padding({ left: 0, right: 0, top: 0, bottom: 2 })
 
       if (this.isLoading) {
         Column({ space: 6 }) {
@@ -118,60 +124,83 @@ struct WatchVolunteerOrdersPage {
         .width('100%')
         .justifyContent(FlexAlign.Center)
       } else if (this.orders.length === 0) {
-        Text('暂无订单')
-          .fontSize(12)
-          .fontColor('#94a3b8')
-          .layoutWeight(1)
-          .width('100%')
-          .textAlign(TextAlign.Center)
+        Column({ space: 6 }) {
+          Text('暂无订单')
+            .fontSize(12)
+            .fontColor('#94a3b8')
+            .width('100%')
+            .textAlign(TextAlign.Center)
+          Text('完成服务后，这里会显示你的服务记录')
+            .fontSize(9)
+            .fontColor('#cbd5e1')
+            .width('100%')
+            .textAlign(TextAlign.Center)
+        }
+        .layoutWeight(1)
+        .width('100%')
+        .justifyContent(FlexAlign.Center)
       } else {
-        List({ space: 6 }) {
-          ForEach(this.orders, (o: OrdRow) => {
-            ListItem() {
-              Row() {
-                Column({ space: 3 }) {
-                  Text(o.title)
-                    .fontSize(12)
-                    .fontWeight(FontWeight.Medium)
-                    .maxLines(2)
-                  Text(o.statusLabel)
-                    .fontSize(10)
-                    .fontColor(this.statusColor(o.status))
+        Scroll() {
+          List({ space: 8 }) {
+            ForEach(this.orders, (o: OrdRow) => {
+              ListItem() {
+                Column({ space: 4 }) {
+                  Row() {
+                    Text(o.title)
+                      .fontSize(12)
+                      .fontWeight(FontWeight.Medium)
+                      .fontColor('#0f172a')
+                      .maxLines(2)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                      .layoutWeight(1)
+
+                    Text(o.statusLabel)
+                      .fontSize(10)
+                      .fontWeight(FontWeight.Medium)
+                      .fontColor(this.statusColor(o.status))
+                      .backgroundColor('#ffffff')
+                      .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                      .borderRadius(999)
+                  }
+                  .width('100%')
+                  .alignItems(VerticalAlign.Center)
+
+                  Text(o.status === 'completed' ? '点击查看服务记录' : '点击进入服务详情')
+                    .fontSize(9)
+                    .fontColor('#64748b')
                 }
-                .alignItems(HorizontalAlign.Start)
-                .layoutWeight(1)
+                .width('100%')
+                .padding(10)
+                .backgroundColor('#ffffff')
+                .border({ width: 1, color: '#e2e8f0' })
+                .borderRadius(12)
+                .shadow({ radius: 3, color: '#00000010', offsetY: 1 })
+                .onClick(() => {
+                  this.openOrder(o.orderId);
+                })
               }
-              .width('100%')
-              .padding(8)
-              .backgroundColor(o.status === 'accepted' || o.status === 'in-progress' ? '#eff6ff' : '#ffffff')
-              .borderRadius(8)
-              .onClick(() => {
-                this.openOrder(o.orderId);
-              })
-            }
-          }, (o: OrdRow) => o.orderId)
+            }, (o: OrdRow) => o.orderId)
+          }
+          .width('100%')
         }
         .layoutWeight(1)
         .width('100%')
       }
 
       WatchButton({
-        text: 'xxx',
+        text: '刷新列表',
         buttonType: 'secondary',
         buttonSize: 'small',
         buttonWidth: '100%'
       })
-        .onClick(() => {
-          this.xxx();
-        })
+      .onClick(() => {
+        this.loadOrders();
+      })
     }
     .width('100%')
     .height('100%')
     .backgroundColor('#f8fafc')
-    .padding({ top: 30, bottom: 30, left: 12, right: 12 })
+    .padding({ top: 24, bottom: 20, left: 10, right: 10 })
   }
 
-  xxx() {
-    throw new Error('Method not implemented.');
-  }
 }

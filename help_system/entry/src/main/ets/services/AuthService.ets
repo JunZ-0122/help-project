@@ -159,7 +159,7 @@ export class AuthService {
       const response = await HttpClient.post<void>('/auth/send-code', codeData);
       return response.code === 200;
     } catch (err) {
-      const error = err as Error;
+      const error = err instanceof Error ? err : new Error(String(err));
       console.error('发送验证码失败:', error);
       throw new Error(error.message || '发送验证码失败');
     }

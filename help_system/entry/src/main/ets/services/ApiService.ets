@@ -17,8 +17,11 @@ import {
 } from '../models';
 import { StorageUtil } from '../utils/StorageUtil';
 
-// Previewer 预览可改为 127.0.0.1；真机/模拟器用本机局域网 IP
-const API_BASE_URL = 'http://192.168.1.104:8080/api';
+// 预览器可用 127.0.0.1；鸿蒙模拟器通常需要访问宿主机映射地址。
+// 如果你在模拟器里连不上局域网 IP，优先改成 10.0.2.2 或宿主机可访问地址。
+const API_BASE_URL = 'http://10.0.2.2:8080/api';
+const REQUEST_TIMEOUT_MS = 20000;
+const REQUEST_RETRY_COUNT = 1;
 
 interface RequestHeaders {
   'Content-Type': string;
@@ -34,6 +37,31 @@ class HttpClient {
   private static createRequest(): http.HttpRequest {
     return http.createHttp();
   }
+
+  private static async requestWithRetry(
+    httpRequest: http.HttpRequest,
+    url: string,
+    options: http.HttpRequestOptions,
+    retryCount: number = REQUEST_RETRY_COUNT
+  ): Promise<http.HttpResponse> {
+    let lastError: Error = new Error('request failed');
+
+    for (let attempt = 0; attempt <= retryCount; attempt++) {
+      try {
+        return await httpRequest.request(url, options);
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        const isLastAttempt = attempt >= retryCount;
+        if (isLastAttempt) {
+          throw lastError;
+        }
+        console.warn(`[HttpClient] request failed, retrying... attempt=${attempt + 1}`, lastError.message);
+      }
+    }
+
+    throw lastError;
+  }
+
 
   private static async getHeaders(): Promise<RequestHeaders> {
     const headers: RequestHeaders = {
@@ -94,16 +122,16 @@ class HttpClient {
     console.info('[HttpClient][GET] url=' + fullUrl);
 
     try {
-      const response = await httpRequest.request(fullUrl, {
+      const response = await HttpClient.requestWithRetry(httpRequest, fullUrl, {
         method: http.RequestMethod.GET,
         header: headers,
-        readTimeout: 10000,
-        connectTimeout: 10000
+        readTimeout: REQUEST_TIMEOUT_MS,
+        connectTimeout: REQUEST_TIMEOUT_MS
       });
 
       return await HttpClient.handleResponse<T>(response);
     } catch (err) {
-      const error = err as Error;
+      const error = err instanceof Error ? err : new Error(String(err));
       throw new Error(error.message ? error.message : 'get request failed');
     } finally {
       httpRequest.destroy();
@@ -118,17 +146,17 @@ class HttpClient {
     console.info('[HttpClient][POST] body=' + (data ? JSON.stringify(data) : ''));
 
     try {
-      const response = await httpRequest.request(fullUrl, {
+      const response = await HttpClient.requestWithRetry(httpRequest, fullUrl, {
         method: http.RequestMethod.POST,
         header: headers,
         extraData: data ? JSON.stringify(data) : undefined,
-        readTimeout: 10000,
-        connectTimeout: 10000
+        readTimeout: REQUEST_TIMEOUT_MS,
+        connectTimeout: REQUEST_TIMEOUT_MS
       });
 
       return await HttpClient.handleResponse<T>(response);
     } catch (err) {
-      const error = err as Error;
+      const error = err instanceof Error ? err : new Error(String(err));
       throw new Error(error.message ? error.message : 'post request failed');
     } finally {
       httpRequest.destroy();
@@ -143,17 +171,17 @@ class HttpClient {
     console.info('[HttpClient][PUT] body=' + (data ? JSON.stringify(data) : ''));
 
     try {
-      const response = await httpRequest.request(fullUrl, {
+      const response = await HttpClient.requestWithRetry(httpRequest, fullUrl, {
         method: http.RequestMethod.PUT,
         header: headers,
         extraData: data ? JSON.stringify(data) : undefined,
-        readTimeout: 10000,
-        connectTimeout: 10000
+        readTimeout: REQUEST_TIMEOUT_MS,
+        connectTimeout: REQUEST_TIMEOUT_MS
       });
 
       return await HttpClient.handleResponse<T>(response);
     } catch (err) {
-      const error = err as Error;
+      const error = err instanceof Error ? err : new Error(String(err));
       throw new Error(error.message ? error.message : 'put request failed');
     } finally {
       httpRequest.destroy();
@@ -167,16 +195,16 @@ class HttpClient {
     console.info('[HttpClient][DELETE] url=' + fullUrl);
 
     try {
-      const response = await httpRequest.request(fullUrl, {
+      const response = await HttpClient.requestWithRetry(httpRequest, fullUrl, {
         method: http.RequestMethod.DELETE,
         header: headers,
-        readTimeout: 10000,
-        connectTimeout: 10000
+        readTimeout: REQUEST_TIMEOUT_MS,
+        connectTimeout: REQUEST_TIMEOUT_MS
       });
 
       return await HttpClient.handleResponse<T>(response);
     } catch (err) {
-      const error = err as Error;
+      const error = err instanceof Error ? err : new Error(String(err));
       throw new Error(error.message ? error.message : 'delete request failed');
     } finally {
       httpRequest.destroy();
@@ -208,6 +236,27 @@ interface CompleteOrderPayload {
 }
 
 interface EmptyPayload {
+}
+
+export interface WatchTimelineItem {
+  label: string;
+  time?: string;
+  state: string;
+}
+
+export interface WatchRequestStatus {
+  requestId: string;
+  stage: string;
+  status: string;
+  title: string;
+  location: string;
+  updatedAt: string;
+  volunteerName?: string;
+  volunteerPhoneMasked?: string;
+  distanceKm?: number;
+  etaMinutes?: number;
+  timeline?: WatchTimelineItem[];
+  message?: string;
 }
 
 interface LoginPayload {
@@ -374,6 +423,12 @@ export class RequestApi {
     return requireData(response, 'get seeker request detail failed');
   }
 
+  /** 手表端：紧急求助状态轮询 */
+  static async getWatchRequestStatus(id: string): Promise<WatchRequestStatus> {
+    const response = await HttpClient.get<WatchRequestStatus>(`/requests/${id}/watch-status`);
+    return requireData(response, 'get watch request status failed');
+  }
+
   static async cancelRequest(id: string): Promise<boolean> {
     const response = await HttpClient.delete<void>(`/requests/${id}`);
     return response.code === 200;
@@ -384,6 +439,11 @@ export class EmergencyApi {
   static async createEmergencyRequest(request: CreateEmergencyRequestPayload): Promise<HelpRequest> {
     const response = await HttpClient.post<HelpRequest>('/emergency/requests', request);
     return requireData(response, 'create emergency request failed');
+  }
+
+  static async startDevFlow(requestId: string): Promise<boolean> {
+    const response = await HttpClient.post<void>(`/requests/${requestId}/dev/flow-start`);
+    return response.code === 200;
   }
 }
 

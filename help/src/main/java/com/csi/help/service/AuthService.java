@@ -102,6 +102,7 @@ public class AuthService {
         // 1. 生成 6 位验证码
         // 2. 存储到 Redis，有效期 5 分钟
         // 3. 调用短信服务发送
+        System.out.println("发送验证码请求: phone=" + phone + ", type=" + type);
     }
     
     /**

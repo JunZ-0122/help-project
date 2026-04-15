@@ -215,23 +215,20 @@ struct WatchSeekerHomePage {
           .height('100%')
           .backgroundColor('rgba(0, 0, 0, 0.5)')
           .onClick(() => {
-            // 点击背景关闭对话框
             this.cancelSubmit();
           })
 
         // 对话框内容
-        Column({ space: 12 }) {
-          // 顶部：返回按钮 + 标题
+        Column({ space: 6 }) {
           Row() {
-            // 返回按钮
             Stack() {
               Circle()
-                .width(24)
-                .height(24)
+                .width(22)
+                .height(22)
                 .fill('#f1f5f9')
 
               Text('←')
-                .fontSize(16)
+                .fontSize(14)
                 .fontColor('#64748b')
             }
             .onClick(() => {
@@ -240,41 +237,39 @@ struct WatchSeekerHomePage {
 
             Blank()
 
-            // 标题
             Text(this.getTypeName(this.pendingRequestType))
-              .fontSize(14)
+              .fontSize(13)
               .fontWeight(FontWeight.Bold)
               .fontColor('#1e293b')
 
             Blank()
 
-            // 占位，保持标题居中
             Stack() {
               Circle()
-                .width(24)
-                .height(24)
+                .width(22)
+                .height(22)
                 .fill('transparent')
             }
           }
           .width('100%')
 
-          // 位置提示
           Text(this.pendingLocation)
-            .fontSize(10)
+            .fontSize(9)
             .fontColor('#64748b')
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
             .textAlign(TextAlign.Center)
+            .padding({ bottom: 2 })
 
-          // 描述输入框
-          TextInput({ placeholder: '请简要描述您的需求（可选）', text: this.pendingDescription })
+          TextInput({ placeholder: '需求描述（可选）', text: this.pendingDescription })
             .width('100%')
-            .height(40)
-            .fontSize(11)
+            .height(32)
+            .fontSize(10)
+            .placeholderFont({ size: 8 })
             .fontColor('#1e293b')
             .backgroundColor('#f8fafc')
-            .borderRadius(6)
+            .borderRadius(8)
             .padding({ left: 8, right: 8 })
             .placeholderColor('#94a3b8')
             .border({ width: 1, color: '#e2e8f0' })
@@ -282,38 +277,37 @@ struct WatchSeekerHomePage {
               this.pendingDescription = value;
             })
 
-          // 发送紧急求助按钮（大红色）
-          Button(this.isSubmitting ? '提交中...' : '发送紧急求助')
+          Button(this.isSubmitting ? '提交中...' : '发送求助')
             .width('100%')
-            .height(50)
-            .fontSize(16)
+            .height(44)
+            .fontSize(14)
             .fontWeight(FontWeight.Bold)
             .backgroundColor('#dc2626')
             .fontColor('#ffffff')
-            .borderRadius(8)
+            .borderRadius(12)
             .enabled(!this.isSubmitting)
             .onClick(() => {
               this.confirmSubmit();
             })
 
-          // 刷新位置按钮（灰色）
           Button(this.isRefreshingLocation ? '刷新中...' : '刷新位置')
             .width('100%')
-            .height(40)
-            .fontSize(14)
-            .backgroundColor('#64748b')
-            .fontColor('#ffffff')
-            .borderRadius(8)
+            .height(30)
+            .fontSize(10)
+            .backgroundColor('#eef2f7')
+            .fontColor('#475569')
+            .borderRadius(10)
+            .border({ width: 1, color: '#dbe3ee' })
             .enabled(!this.isRefreshingLocation)
             .onClick(() => {
               this.refreshLocation();
             })
         }
-        .width('85%')
-        .padding(16)
+        .width('80%')
+        .padding(12)
         .backgroundColor('#ffffff')
-        .borderRadius(12)
-        .shadow({ radius: 10, color: '#00000030', offsetY: 4 })
+        .borderRadius(16)
+        .shadow({ radius: 8, color: '#00000030', offsetY: 3 })
       }
       .width('100%')
       .height('100%')
@@ -335,41 +329,44 @@ struct WatchSeekerHomePage {
         Column({ space: 10 }) {
           // 顶部标题
           Text('快速求助')
-            .fontSize(this.largeFontEnabled ? 14 : 12)
+            .fontSize(this.largeFontEnabled ? 15 : 13)
             .fontWeight(FontWeight.Bold)
             .fontColor(this.highContrastEnabled ? '#000000' : '#1e293b')
-            .margin({ top: 6 })
+            .margin({ top: 4, bottom: 2 })
 
-          // 紧急求助按钮（椭圆形）
-          Column({ space: 3 }) {
-            // 感叹号图标
+          // 紧急求助按钮（首页主视觉）
+          Column({ space: 4 }) {
             Stack() {
               Circle()
-                .width(24)
-                .height(24)
+                .width(28)
+                .height(28)
                 .fill('#ffffff')
 
               Text('!')
-                .fontSize(18)
+                .fontSize(20)
                 .fontWeight(FontWeight.Bold)
                 .fontColor('#dc2626')
             }
 
             Text('紧急求助')
-              .fontSize(this.largeFontEnabled ? 12 : 11)
+              .fontSize(this.largeFontEnabled ? 13 : 12)
               .fontWeight(FontWeight.Bold)
               .fontColor('#ffffff')
+
+            Text('一键发起紧急求助')
+              .fontSize(this.largeFontEnabled ? 10 : 9)
+              .fontColor('rgba(255,255,255,0.9)')
           }
-          .width('75%')
-          .height(50)
+          .width('82%')
+          .height(72)
           .backgroundColor(this.highContrastEnabled ? '#ff0000' : '#dc2626')
-          .borderRadius(25)
+          .borderRadius(36)
           .justifyContent(FlexAlign.Center)
-          .shadow({ radius: 5, color: '#dc262640', offsetY: 2 })
+          .shadow({ radius: 8, color: '#dc262640', offsetY: 3 })
           .onClick(() => { this.goEmergency(); })
 
           // 2x2 网格卡片
-          Column({ space: 8 }) {
+          Column({ space: 6 }) {
             // 第一行:就医 + 出行
             Row({ space: 8 }) {
               this.buildCircleCard('就医', '♥', this.highContrastEnabled ? '#ff0000' : '#ef4444', () => {
@@ -390,39 +387,39 @@ struct WatchSeekerHomePage {
               })
 
               this.buildCircleCard('其他', '📋', this.highContrastEnabled ? '#ff8800' : '#f97316', () => {
-                this.showConfirm('other');
+                this.goMyRequests();
               })
             }
             .width('100%')
             .justifyContent(FlexAlign.SpaceEvenly)
           }
-          .width('90%')
+          .width('88%')
           .margin({ top: 2 })
 
           // 底部按钮：设置、退出
-          Row({ space: 6 }) {
+          Row({ space: 5 }) {
             Button('设置')
               .layoutWeight(1)
-              .height(26)
-              .fontSize(10)
+              .height(24)
+              .fontSize(9)
               .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#64748b')
               .fontColor(this.highContrastEnabled ? '#000000' : '#ffffff')
-              .borderRadius(13)
+              .borderRadius(12)
               .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
               .onClick(() => { this.goSettings(); })
 
             Button('退出')
               .layoutWeight(1)
-              .height(26)
-              .fontSize(10)
+              .height(24)
+              .fontSize(9)
               .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#64748b')
               .fontColor(this.highContrastEnabled ? '#000000' : '#ffffff')
-              .borderRadius(13)
+              .borderRadius(12)
               .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
               .onClick(() => { this.logout(); })
           }
-          .width('80%')
-          .margin({ bottom: 8 })
+          .width('76%')
+          .margin({ bottom: 6 })
         }
         .width('100%')
         .padding({ left: 10, right: 10 })

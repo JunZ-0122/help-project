@@ -101,10 +101,9 @@ struct WatchMyRequestsPage {
 
   private openDetail(id: string): void {
     router.pushUrl({
-      url: 'pages/watch/WatchSeekerRequestDetailPage',
-      params: { id: id }
+      url: 'pages/watch/WatchSeekerHomePage'
     }).catch((err: Error) => {
-      console.error('nav detail failed:', err);
+      console.error('nav home failed:', err);
     });
   }
 
@@ -147,7 +146,12 @@ struct WatchMyRequestsPage {
                   .maxLines(2)
                   .fontColor(row.id === this.highlightId ? '#2563eb' : '#0f172a')
                 Row() {
-                  Text(row.statusLabel).fontSize(10).fontColor('#64748b')
+                  Text(row.statusLabel)
+                    .fontSize(10)
+                    .fontColor('#64748b')
+                    .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                    .backgroundColor('#eef2ff')
+                    .borderRadius(8)
                   Text(row.timeShort).fontSize(10).fontColor('#94a3b8')
                 }
                 .width('100%')

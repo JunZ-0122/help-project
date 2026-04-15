@@ -2,6 +2,7 @@ package com.csi.help.controller;
 
 import com.csi.help.common.PageResult;
 import com.csi.help.common.Result;
+import com.csi.help.dto.WatchRequestStatusDto;
 import com.csi.help.entity.HelpRequest;
 import com.csi.help.service.HelpRequestService;
 import com.csi.help.vo.SeekerRequestDetailVo;
@@ -60,6 +61,40 @@ public class HelpRequestController {
             HelpRequest created = helpRequestService.create(request, userId, userName, userPhone);
             log.info("[Requests] 创建成功: requestId={}", created != null ? created.getId() : "");
             return Result.success(created);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 手表端紧急求助状态查询（轮询用）
+     */
+    @GetMapping("/{id}/watch-status")
+    public Result<WatchRequestStatusDto> getWatchStatus(@PathVariable String id,
+                                                        @RequestAttribute String userId) {
+        try {
+            return Result.success(helpRequestService.getWatchStatus(id, userId));
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("\u65e0\u6743")) {
+                return Result.error(403, msg);
+            }
+            if (msg != null && msg.contains("\u4e0d\u5b58\u5728")) {
+                return Result.error(404, msg);
+            }
+            return Result.error(msg != null ? msg : "error");
+        }
+    }
+
+    /**
+     * 开发测试：推进紧急求助状态（不影响正式接口）
+     */
+    @PostMapping("/{id}/dev/flow-start")
+    public Result<Void> startDevFlow(@PathVariable String id,
+                                     @RequestAttribute String userId) {
+        try {
+            helpRequestService.startDevEmergencyFlow(id, userId);
+            return Result.success();
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

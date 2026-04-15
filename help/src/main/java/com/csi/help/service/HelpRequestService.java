@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import com.csi.help.common.PageResult;
 import com.csi.help.dto.EmergencyRequestDto;
 import com.csi.help.dto.HelpRequestWithDistanceDto;
+import com.csi.help.dto.WatchRequestStatusDto;
 import com.csi.help.entity.HelpRequest;
 import com.csi.help.entity.User;
 import com.csi.help.entity.VolunteerOrder;
@@ -21,6 +22,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +36,8 @@ public class HelpRequestService {
     private static final int NEARBY_FETCH_LIMIT = 500;
     private static final DateTimeFormatter HEADER_DT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final DateTimeFormatter TIME_ONLY = DateTimeFormatter.ofPattern("HH:mm");
+    private static final ScheduledExecutorService DEV_FLOW_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+    private static final Map<String, Integer> DEV_FLOW_STEPS = new ConcurrentHashMap<>();
 
     private final HelpRequestMapper helpRequestMapper;
     private final AmapService amapService;
@@ -166,6 +175,14 @@ public class HelpRequestService {
     }
 
     public void assignVolunteer(String requestId, String volunteerId, String volunteerName) {
+        User volunteer = userMapper.findById(volunteerId);
+        if (volunteer == null) {
+            throw new RuntimeException("志愿者不存在");
+        }
+        if (!"online".equals(volunteer.getStatus())) {
+            throw new RuntimeException("当前已离线，无法接单");
+        }
+
         helpRequestMapper.assignVolunteer(requestId, volunteerId, volunteerName);
         helpRequestMapper.updateStatus(requestId, "assigned");
     }
@@ -293,6 +310,65 @@ public class HelpRequestService {
 
         vo.setTimeline(buildSeekerTimeline(r, order, st));
         return vo;
+    }
+
+    public WatchRequestStatusDto getWatchStatus(String requestId, String userId) {
+        SeekerRequestDetailVo detail = getSeekerRequestDetail(requestId, userId);
+        HelpRequest request = detail.getRequest();
+        WatchRequestStatusDto dto = new WatchRequestStatusDto();
+        dto.setRequestId(requestId);
+        dto.setStatus(request.getStatus());
+        dto.setTitle(request.getTitle());
+        dto.setLocation(request.getLocation());
+        dto.setUpdatedAt(request.getUpdatedAt() != null ? request.getUpdatedAt().format(HEADER_DT) : "");
+        dto.setEtaMinutes(detail.getEtaMinutes());
+        dto.setTimeline(detail.getTimeline());
+
+        String st = request.getStatus();
+        if ("pending".equals(st)) {
+            dto.setStage("matching");
+            dto.setMessage("正在为您匹配志愿者");
+        } else if ("assigned".equals(st)) {
+            dto.setStage("matched");
+            dto.setMessage("志愿者已接单");
+        } else if ("in-progress".equals(st)) {
+            dto.setStage("progress");
+            dto.setMessage("志愿者正在赶来");
+        } else if ("completed".equals(st)) {
+            dto.setStage("completed");
+            dto.setMessage("服务已完成");
+        } else if ("cancelled".equals(st)) {
+            dto.setStage("cancelled");
+            dto.setMessage("求助已取消");
+        } else {
+            dto.setStage("matching");
+            dto.setMessage("正在处理中");
+        }
+
+        if (detail.getVolunteer() != null) {
+            dto.setVolunteerName(detail.getVolunteer().getName());
+            dto.setVolunteerPhoneMasked(detail.getVolunteer().getPhoneMasked());
+            dto.setDistanceKm(detail.getVolunteer().getDistanceKm());
+        }
+        return dto;
+    }
+
+    public void startDevEmergencyFlow(String requestId, String userId) {
+        HelpRequest request = getById(requestId);
+        if (!Objects.equals(request.getUserId(), userId)) {
+            throw new RuntimeException("无权操作该求助");
+        }
+        if (request.getStatus() == null || "completed".equals(request.getStatus()) || "cancelled".equals(request.getStatus())) {
+            return;
+        }
+        DEV_FLOW_STEPS.put(requestId, 0);
+        DEV_FLOW_EXECUTOR.schedule(() -> helpRequestMapper.updateStatus(requestId, "pending"), 1, TimeUnit.SECONDS);
+        DEV_FLOW_EXECUTOR.schedule(() -> {
+            helpRequestMapper.assignVolunteer(requestId, "dev-volunteer", "演示志愿者");
+            helpRequestMapper.updateStatus(requestId, "assigned");
+        }, 4, TimeUnit.SECONDS);
+        DEV_FLOW_EXECUTOR.schedule(() -> helpRequestMapper.updateStatus(requestId, "in-progress"), 8, TimeUnit.SECONDS);
+        DEV_FLOW_EXECUTOR.schedule(() -> helpRequestMapper.updateStatus(requestId, "completed"), 14, TimeUnit.SECONDS);
     }
 
     private SeekerVolunteerVo buildSeekerVolunteer(HelpRequest r, VolunteerOrder order) {

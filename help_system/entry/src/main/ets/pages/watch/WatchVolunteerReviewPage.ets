@@ -73,93 +73,103 @@ struct WatchVolunteerReviewPage {
   }
 
   build() {
-    Column() {
-      Row({ space: 8 }) {
-        NavBackButton()
-        Text('评价求助者')
-          .fontSize(14)
-          .fontWeight(FontWeight.Medium)
-          .layoutWeight(1)
-      }
-      .width('100%')
-      .padding({ left: 0, right: 0, top: 0, bottom: 6 })
-      .backgroundColor('#ffffff')
-
-      if (this.isLoading) {
-        Column({ space: 8 }) {
-          LoadingProgress().width(32).height(32)
+    Stack() {
+      Column() {
+        Row({ space: 8 }) {
+          NavBackButton()
+          Text('评价求助者')
+            .fontSize(14)
+            .fontWeight(FontWeight.Medium)
+            .layoutWeight(1)
         }
-        .layoutWeight(1)
         .width('100%')
-        .justifyContent(FlexAlign.Center)
-      } else {
-        Scroll() {
-          Column({ space: 8 }) {
-            Text(this.seekerName.length > 0 ? `服务对象：${this.seekerName}` : '请为本次沟通打分')
-              .fontSize(12)
-              .width('100%')
+        .padding({ left: 0, right: 0, top: 0, bottom: 4 })
+        .backgroundColor('#ffffff')
 
-            Row({ space: 6 }) {
-              WatchButton({
-                text: '满意',
-                buttonType: this.selectedScore === 5 ? 'primary' : 'secondary',
-                buttonSize: 'small',
-                buttonEnabled: this.existing === null
-              })
-              .onClick(() => { this.selectedScore = 5; })
-              
-              WatchButton({
-                text: '一般',
-                buttonType: this.selectedScore === 3 ? 'primary' : 'secondary',
-                buttonSize: 'small',
-                buttonEnabled: this.existing === null
-              })
-              .onClick(() => { this.selectedScore = 3; })
-              
-              WatchButton({
-                text: '不满',
-                buttonType: this.selectedScore === 1 ? 'emergency' : 'secondary',
-                buttonSize: 'small',
-                buttonEnabled: this.existing === null
-              })
-              .onClick(() => { this.selectedScore = 1; })
+        if (this.isLoading) {
+          Column({ space: 8 }) {
+            LoadingProgress().width(32).height(32)
+          }
+          .layoutWeight(1)
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+        } else {
+          Scroll() {
+            Column({ space: 7 }) {
+              Text(this.seekerName.length > 0 ? `服务对象：${this.seekerName}` : '请为本次沟通打分')
+                .fontSize(12)
+                .width('100%')
+
+              Row({ space: 4 }) {
+                WatchButton({
+                  text: '满意',
+                  buttonType: this.selectedScore === 5 ? 'primary' : 'secondary',
+                  buttonSize: 'small',
+                  buttonWidth: '31%'
+                })
+                .onClick(() => { this.selectedScore = 5; })
+                
+                WatchButton({
+                  text: '一般',
+                  buttonType: this.selectedScore === 3 ? 'primary' : 'secondary',
+                  buttonSize: 'small',
+                  buttonWidth: '31%'
+                })
+                .onClick(() => { this.selectedScore = 3; })
+                
+                WatchButton({
+                  text: '不满',
+                  buttonType: this.selectedScore === 1 ? 'emergency' : 'secondary',
+                  buttonSize: 'small',
+                  buttonWidth: '31%'
+                })
+                .onClick(() => { this.selectedScore = 1; })
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.SpaceBetween)
+
+              TextInput({ placeholder: '补充说明（可选）', text: this.feedback })
+                .height(44)
+                .fontSize(10)
+                .backgroundColor('#ffffff')
+                .fontColor('#1e293b')
+                .placeholderColor('#94a3b8')
+                .border({ width: 1, color: '#dbe3ee' })
+                .borderRadius(12)
+                .padding({ left: 10, right: 10 })
+                .enabled(this.existing === null)
+                .onChange((v: string) => {
+                  this.feedback = v;
+                })
+
+              if (this.existing !== null) {
+                Text('已提交评价')
+                  .fontSize(11)
+                  .fontColor('#64748b')
+              } else {
+                WatchButton({
+                  text: this.isSubmitting ? '提交中...' : '提交评价',
+                  buttonType: 'primary',
+                  buttonSize: 'medium',
+                  buttonWidth: '100%',
+                  buttonEnabled: this.selectedScore > 0 && !this.isSubmitting
+                })
+                .onClick(() => { this.submit(); })
+              }
             }
             .width('100%')
-            .justifyContent(FlexAlign.SpaceBetween)
-
-            TextInput({ placeholder: '补充说明（可选）' })
-              .height(56)
-              .fontSize(11)
-              .enabled(this.existing === null)
-              .onChange((v: string) => {
-                this.feedback = v;
-              })
-
-            if (this.existing !== null) {
-              Text('已提交评价')
-                .fontSize(11)
-                .fontColor('#64748b')
-            } else {
-              WatchButton({
-                text: this.isSubmitting ? '提交中...' : '提交评价',
-                buttonType: 'primary',
-                buttonSize: 'medium',
-                buttonWidth: '100%',
-                buttonEnabled: this.selectedScore > 0 && !this.isSubmitting
-              })
-              .onClick(() => { this.submit(); })
-            }
+            .padding(0)
           }
-          .width('100%')
-          .padding(0)
+          .layoutWeight(1)
+          .align(Alignment.TopStart)
         }
-        .layoutWeight(1)
-        .align(Alignment.TopStart)
       }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#f8fafc')
+      .padding({ top: 24, bottom: 24, left: 10, right: 10 })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f8fafc')
-    .padding({ top: 30, bottom: 30, left: 12, right: 12 })
   }
 }

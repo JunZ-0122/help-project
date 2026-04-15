@@ -88,13 +88,28 @@ struct WatchLoginPage {
         promptAction.showToast({ message: '发送失败，请重试', duration: 2000 });
       }
     }).catch((e: Error) => {
-      promptAction.showToast({ message: e.message || '发送失败', duration: 2000 });
+      console.error('[WatchLoginPage] sendVerificationCode failed:', e);
+      const message = e.message || '发送失败';
+      promptAction.showToast({
+        message: message.includes('CURLcode result 28') || message.includes('timeout')
+          ? '模拟器访问不到后端，请检查 API_BASE_URL / 网络映射'
+          : message,
+        duration: 2000
+      });
     });
   }
 
   private handleResend(): void {
     if (this.countdown > 0) return;
     this.handleNext();
+  }
+
+  private getStepLabel(): string {
+    return this.step === 1 ? '1/2 输入手机号' : '2/2 验证码登录';
+  }
+
+  private getStepHint(): string {
+    return this.step === 1 ? '请先输入 11 位手机号' : '验证码已发送后输入 4 位以上即可登录';
   }
 
   private handleLogin(): void {
@@ -148,20 +163,18 @@ struct WatchLoginPage {
   @Builder
   buildStep1() {
     Column({ space: 6 }) {
-      // 标题区（压缩字体和间距）
       Column({ space: 2 }) {
-        Text('登录')
+        Text(this.getStepLabel())
           .fontSize(this.largeFontEnabled ? 14 : 12)
           .fontWeight(FontWeight.Bold)
           .fontColor(this.highContrastEnabled ? '#000000' : '#1e293b')
-        Text('输入手机号')
+        Text(this.getStepHint())
           .fontSize(8)
           .fontColor(this.highContrastEnabled ? '#000000' : '#64748b')
       }
       .width('100%')
       .alignItems(HorizontalAlign.Center)
 
-      // 手机号显示框 + 删除键
       Row({ space: 3 }) {
         Text(this.phone.length > 0 ? this.phone : '请输入手机号')
           .fontSize(this.largeFontEnabled ? 13 : 11)
@@ -187,10 +200,8 @@ struct WatchLoginPage {
       }
       .width('100%')
 
-      // 键盘
       this.buildKeypad()
 
-      // 底部操作区：0、下一步
       Row({ space: 3 }) {
         Button('0')
           .layoutWeight(1)
@@ -289,7 +300,6 @@ struct WatchLoginPage {
 
       // 底部操作区：0、重发、登录
       Column({ space: 3 }) {
-        // 第一行：0、重发
         Row({ space: 3 }) {
           Button('0')
             .layoutWeight(1)
@@ -312,10 +322,9 @@ struct WatchLoginPage {
             .enabled(this.countdown === 0)
             .onClick(() => { this.handleResend(); })
         }
-        // 第二行：登录按钮
         Button(this.isLoading ? '登录中...' : '登录')
           .width('100%')
-          .height(26)
+          .height(28)
           .fontSize(12)
           .fontWeight(FontWeight.Medium)
           .backgroundColor(this.code.length >= 4 && !this.isLoading

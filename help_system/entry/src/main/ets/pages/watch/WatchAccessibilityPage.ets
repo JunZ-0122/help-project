@@ -1,6 +1,5 @@
 import router from '@ohos.router';
 import { NavBackButton } from '../../components/NavBackButton';
-import { WatchCircularLayout } from '../../components/WatchCircularLayout';
 import { StorageUtil } from '../../utils/StorageUtil';
 
 @Entry
@@ -19,64 +18,96 @@ struct WatchAccessibilityPage {
 
   build() {
     Column() {
-      WatchCircularLayout({
-        centerRadius: 120,
-        edgePadding: 16,
-        content: () => {
-          this.pageContent()
+      Scroll() {
+        Column({ space: 8 }) {
+          Row({ space: 8 }) {
+            NavBackButton()
+            Text('无障碍设置')
+              .fontSize(this.largeFontEnabled ? 16 : 14)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(this.highContrastEnabled ? '#000000' : '#1e293b')
+              .layoutWeight(1)
+              .textAlign(TextAlign.Center)
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+
+          this.optionCard(
+            '大字体',
+            this.largeFontEnabled,
+            () => {
+              const nextValue = !this.largeFontEnabled;
+              this.largeFontEnabled = nextValue;
+              this.saveSetting('accessibility_large_font', nextValue);
+            }
+          )
+
+          this.optionCard(
+            '高对比度',
+            this.highContrastEnabled,
+            () => {
+              const nextValue = !this.highContrastEnabled;
+              this.highContrastEnabled = nextValue;
+              this.saveSetting('accessibility_high_contrast', nextValue);
+            }
+          )
+
+          Text('设置即时生效，可随时在本页恢复。')
+            .fontSize(this.largeFontEnabled ? 10 : 9)
+            .fontColor(this.highContrastEnabled ? '#000000' : '#64748b')
+            .width('100%')
+            .textAlign(TextAlign.Center)
+            .margin({ top: 2 })
         }
-      })
+        .width('100%')
+        .padding({ left: 10, right: 10, top: 10, bottom: 12 })
+      }
+      .width('100%')
+      .height('100%')
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
     }
     .width('100%')
     .height('100%')
+    .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#f0f4ff')
   }
 
   @Builder
-  pageContent() {
-    Column({ space: 10 }) {
-      Row({ space: 8 }) {
-        NavBackButton()
-        Text('无障碍设置')
-          .fontSize(14)
-          .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
-      }
-      .width('100%')
-
-      Row() {
-        Text('大字体')
-          .fontSize(this.largeFontEnabled ? 14 : 12)
+  optionCard(title: string, enabled: boolean, onToggle: () => void) {
+    Row({ space: 8 }) {
+      Column({ space: 4 }) {
+        Text(title)
+          .fontSize(this.largeFontEnabled ? 13 : 12)
+          .fontWeight(FontWeight.Medium)
           .fontColor(this.highContrastEnabled ? '#000000' : '#334155')
-          .layoutWeight(1)
-        Toggle({ type: ToggleType.Switch, isOn: this.largeFontEnabled })
-          .onChange((isOn: boolean) => {
-            this.largeFontEnabled = isOn;
-            this.saveSetting('accessibility_large_font', isOn);
-          })
-      }
-      .width('100%')
-      .padding({ top: 6, bottom: 6 })
+          .width('100%')
+          .textAlign(TextAlign.Center)
 
-      Row() {
-        Text('高对比度')
-          .fontSize(this.largeFontEnabled ? 14 : 12)
-          .fontColor(this.highContrastEnabled ? '#000000' : '#334155')
-          .layoutWeight(1)
-        Toggle({ type: ToggleType.Switch, isOn: this.highContrastEnabled })
-          .onChange((isOn: boolean) => {
-            this.highContrastEnabled = isOn;
-            this.saveSetting('accessibility_high_contrast', isOn);
-          })
+        Text(enabled ? '当前已开启' : '当前已关闭')
+          .fontSize(this.largeFontEnabled ? 10 : 9)
+          .fontColor(this.highContrastEnabled ? '#000000' : '#64748b')
+          .width('100%')
+          .textAlign(TextAlign.Center)
       }
-      .width('100%')
-      .padding({ top: 6, bottom: 6 })
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Center)
 
-      Text('设置即时生效')
-        .fontSize(10)
-        .fontColor('#94a3b8')
-        .width('100%')
-        .textAlign(TextAlign.Center)
+      Button(enabled ? '点击关闭' : '点击开启')
+        .width(72)
+        .height(34)
+        .fontSize(this.largeFontEnabled ? 10 : 9)
+        .fontColor('#ffffff')
+        .backgroundColor(enabled ? '#16a34a' : '#64748b')
+        .borderRadius(10)
+        .onClick(() => {
+          onToggle();
+        })
     }
     .width('100%')
+    .padding(10)
+    .alignItems(VerticalAlign.Center)
+    .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#ffffffcc')
+    .borderRadius(14)
+    .border({ width: this.highContrastEnabled ? 2 : 1, color: this.highContrastEnabled ? '#000000' : '#e2e8f0' })
   }
 }

@@ -106,7 +106,9 @@ struct WatchSeekerRequestPage {
       });
     } catch (e) {
       const err = e as Error;
-      promptAction.showToast({ message: err.message || '提交失败', duration: 2000 });
+      const message = err.message || '提交失败';
+      console.error('[WatchSeekerRequestPage] submit failed:', err);
+      promptAction.showToast({ message: message.includes('Timeout') ? '网络超时，请稍后重试' : message, duration: 2000 });
     } finally {
       this.isSubmitting = false;
     }
@@ -128,45 +130,59 @@ struct WatchSeekerRequestPage {
         Column({ space: 8 }) {
           if (this.selectedType.length === 0) {
             Text('选择类型')
-              .fontSize(12)
-              .fontColor('#64748b')
+              .fontSize(14)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#1e293b')
               .width('100%')
+              .margin({ bottom: 4 })
 
-            Row({ space: 6 }) {
-              WatchButton({
-                text: '就医',
-                buttonType: 'emergency',
-                buttonSize: 'small'
-              })
-              .onClick(() => { this.selectedType = 'medical'; })
+            // 第一行:就医 + 出行
+            Row({ space: 8 }) {
+              Button('就医')
+                .layoutWeight(1)
+                .height(50)
+                .fontSize(14)
+                .fontWeight(FontWeight.Medium)
+                .backgroundColor('#ef4444')
+                .fontColor('#ffffff')
+                .borderRadius(8)
+                .onClick(() => { this.selectedType = 'medical'; })
               
-              WatchButton({
-                text: '出行',
-                buttonType: 'primary',
-                buttonSize: 'small'
-              })
-              .onClick(() => { this.selectedType = 'companion'; })
+              Button('出行')
+                .layoutWeight(1)
+                .height(50)
+                .fontSize(14)
+                .fontWeight(FontWeight.Medium)
+                .backgroundColor('#3b82f6')
+                .fontColor('#ffffff')
+                .borderRadius(8)
+                .onClick(() => { this.selectedType = 'companion'; })
             }
             .width('100%')
-            .justifyContent(FlexAlign.SpaceEvenly)
 
-            Row({ space: 6 }) {
-              WatchButton({
-                text: '生活',
-                buttonType: 'primary',
-                buttonSize: 'small'
-              })
-              .onClick(() => { this.selectedType = 'shopping'; })
+            // 第二行:生活 + 其他
+            Row({ space: 8 }) {
+              Button('生活')
+                .layoutWeight(1)
+                .height(50)
+                .fontSize(14)
+                .fontWeight(FontWeight.Medium)
+                .backgroundColor('#10b981')
+                .fontColor('#ffffff')
+                .borderRadius(8)
+                .onClick(() => { this.selectedType = 'shopping'; })
               
-              WatchButton({
-                text: '其他',
-                buttonType: 'secondary',
-                buttonSize: 'small'
-              })
-              .onClick(() => { this.selectedType = 'other'; })
+              Button('其他')
+                .layoutWeight(1)
+                .height(50)
+                .fontSize(14)
+                .fontWeight(FontWeight.Medium)
+                .backgroundColor('#64748b')
+                .fontColor('#ffffff')
+                .borderRadius(8)
+                .onClick(() => { this.selectedType = 'other'; })
             }
             .width('100%')
-            .justifyContent(FlexAlign.SpaceEvenly)
           } else {
             Row({ space: 6 }) {
               Text(`类型：${this.typeName(this.selectedType)}`)
