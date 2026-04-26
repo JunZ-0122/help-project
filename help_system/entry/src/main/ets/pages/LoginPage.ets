@@ -1,7 +1,6 @@
 import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { AuthService } from '../services/AuthService';
-import { StorageUtil } from '../utils/StorageUtil';
 import { isWearableDevice } from '../utils/DeviceFormUtil';
 import type { LoginRequest, LoginResponse } from '../models/Auth';
 
@@ -10,18 +9,16 @@ import type { LoginRequest, LoginResponse } from '../models/Auth';
 struct LoginPage {
   @State phone: string = '';
   @State code: string = '';
+  @State loginMode: 'sms' | 'password' = 'sms';
+  @State showPassword: boolean = false;
   @State codeSent: boolean = false;
   @State countdown: number = 0;
   @State isLoading: boolean = false;
   @State formOpacity: number = 0;
   @State logoScale: number = 0.8;
-  /** 手表圆屏高度小，需滚动 + 紧凑布局，否则只能看到标题看不到表单 */
   @State isWatchLayout: boolean = false;
-  @State @Watch('onLoginSuccess') loginSuccessful: boolean = false;
-  @State loginUserData: LoginResponse | null = null;
   private countdownTimer: number = -1;
 
-  // 无障碍设置
   @StorageLink('accessibility_large_font') largeFontEnabled: boolean = false;
   @StorageLink('accessibility_high_contrast') highContrastEnabled: boolean = false;
 
@@ -47,181 +44,185 @@ struct LoginPage {
     }
   }
 
-  // 监听登录成功状态变化，执行路由跳转
-  onLoginSuccess() {
-    if (this.loginSuccessful && this.loginUserData) {
-      const user = this.loginUserData.user;
-      const role: string | undefined = user.role as string | undefined;
-      
-      // 根据用户角色决定跳转页面
-      let targetUrl = '';
-      let message = '';
-      
-      if (!role) {
-        // 新用户，没有角色 -> 跳转到角色选择页
-        targetUrl = 'pages/RoleSelectPage';
-        message = '欢迎！请选择您的身份';
-        console.info('新用户登录，跳转到角色选择页');
-      } else {
-        // 已有角色的用户 -> 直接跳转到对应主页
-        switch (role) {
-          case 'help-seeker':
-            targetUrl = 'pages/help-seeker/HelpSeekerHomePage';
-            message = '欢迎回来，求助者';
-            break;
-          case 'volunteer':
-            targetUrl = 'pages/volunteer/VolunteerHomePage';
-            message = '欢迎回来，志愿者';
-            break;
-          case 'community':
-            targetUrl = 'pages/community/CommunityHomePage';
-            message = '欢迎回来，管理员';
-            break;
-          default:
-            // 未知角色，跳转到角色选择页
-            targetUrl = 'pages/RoleSelectPage';
-            message = '请选择您的身份';
-            break;
-        }
-        console.info(`已有角色用户登录: ${role}，跳转到对应主页`);
-      }
-      
-      // 显示成功提示
-      promptAction.showToast({
-        message: message,
-        duration: 2000
-      });
-      
-      // 执行路由跳转
-      router.pushUrl({
-        url: targetUrl,
-        params: {
-          user: user
-        }
-      }).then(() => {
-        console.info(`页面跳转成功: ${targetUrl}`);
-      }).catch((err: Error) => {
-        console.error('导航失败:', err);
-        promptAction.showToast({
-          message: '页面跳转失败: ' + err.message,
-          duration: 2000
-        });
-      });
+  private t(key: string): string {
+    switch (key) {
+      case 'welcome':
+        return '\u6b22\u8fce\u4f7f\u7528\u4e92\u52a9\u5e2e\u6276';
+      case 'subtitle':
+        return '\u8ba9\u7231\u5fc3\u89e6\u624b\u53ef\u53ca';
+      case 'smsLogin':
+        return '\u9a8c\u8bc1\u7801\u767b\u5f55';
+      case 'passwordLogin':
+        return '\u5bc6\u7801\u767b\u5f55';
+      case 'phone':
+        return '\u624b\u673a\u53f7';
+      case 'phonePlaceholder':
+        return '\u8bf7\u8f93\u5165\u624b\u673a\u53f7';
+      case 'code':
+        return '\u9a8c\u8bc1\u7801';
+      case 'codePlaceholder':
+        return '\u8bf7\u8f93\u5165\u9a8c\u8bc1\u7801';
+      case 'password':
+        return '\u5bc6\u7801';
+      case 'passwordPlaceholder':
+        return '\u8bf7\u8f93\u5165\u5bc6\u7801';
+      case 'show':
+        return '\u663e\u793a';
+      case 'hide':
+        return '\u9690\u85cf';
+      case 'forgot':
+        return '\u5fd8\u8bb0\u5bc6\u7801?';
+      case 'loggingIn':
+        return '\u767b\u5f55\u4e2d...';
+      case 'login':
+        return '\u767b\u5f55';
+      case 'or':
+        return '\u6216';
+      case 'register':
+        return '\u6ce8\u518c\u65b0\u8d26\u53f7';
+      case 'badPhone':
+        return '\u8bf7\u8f93\u5165\u6b63\u786e\u7684\u624b\u673a\u53f7';
+      case 'missing':
+        return '\u8bf7\u586b\u5199\u5b8c\u6574\u4fe1\u606f';
+      case 'badCode':
+        return '\u8bf7\u8f93\u5165\u6b63\u786e\u7684\u9a8c\u8bc1\u7801';
+      case 'badPassword':
+        return '\u8bf7\u8f93\u51656\u4f4d\u53ca\u4ee5\u4e0a\u5bc6\u7801';
+      case 'sendCodeSuccess':
+        return '\u9a8c\u8bc1\u7801\u5df2\u53d1\u9001\uff08\u6d4b\u8bd5\u73af\u5883\u53ef\u4f7f\u7528123456\uff09';
+      case 'sendCodeFail':
+        return '\u53d1\u9001\u9a8c\u8bc1\u7801\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5';
+      case 'resend':
+        return '\u91cd\u65b0\u53d1\u9001';
+      case 'getCode':
+        return '\u83b7\u53d6\u9a8c\u8bc1\u7801';
+      case 'chooseRole':
+        return '\u6b22\u8fce\uff01\u8bf7\u9009\u62e9\u60a8\u7684\u8eab\u4efd';
+      case 'seekerHome':
+        return '\u6b22\u8fce\u56de\u6765\uff0c\u6c42\u52a9\u8005';
+      case 'volunteerHome':
+        return '\u6b22\u8fce\u56de\u6765\uff0c\u5fd7\u613f\u8005';
+      case 'communityHome':
+        return '\u6b22\u8fce\u56de\u6765\uff0c\u7ba1\u7406\u5458';
+      case 'routeFail':
+        return '\u9875\u9762\u8df3\u8f6c\u5931\u8d25';
+      case 'loginFail':
+        return '\u767b\u5f55\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5';
+      case 'openRegisterFail':
+        return '\u65e0\u6cd5\u6253\u5f00\u6ce8\u518c\u9875';
+      default:
+        return '';
     }
+  }
+
+  private showToast(message: string, duration: number = 2000): void {
+    promptAction.showToast({
+      message: message,
+      duration: duration
+    });
+  }
+
+  private getCodeButtonText(): string {
+    if (this.countdown > 0) {
+      return `${this.countdown}\u79d2`;
+    }
+    return this.codeSent ? this.t('resend') : this.t('getCode');
+  }
+
+  private navigateAfterLogin(response: LoginResponse): void {
+    const user = response.user;
+    const role = user.role;
+    let targetUrl = 'pages/RoleSelectPage';
+    let message = this.t('chooseRole');
+
+    if (role === 'help-seeker') {
+      targetUrl = 'pages/help-seeker/HelpSeekerHomePage';
+      message = this.t('seekerHome');
+    } else if (role === 'volunteer') {
+      targetUrl = 'pages/volunteer/VolunteerHomePage';
+      message = this.t('volunteerHome');
+    } else if (role === 'community') {
+      targetUrl = 'pages/community/CommunityHomePage';
+      message = this.t('communityHome');
+    }
+
+    this.showToast(message);
+    router.pushUrl({
+      url: targetUrl,
+      params: {
+        user: user
+      }
+    }).catch((err: Error) => {
+      this.showToast(`${this.t('routeFail')}: ${err.message}`);
+    });
   }
 
   handleSendCode() {
     if (this.phone.length !== 11) {
-      promptAction.showToast({
-        message: '请输入正确的手机号',
-        duration: 2000
-      });
+      this.showToast(this.t('badPhone'));
       return;
     }
 
-    // 调用发送验证码 API
     AuthService.sendVerificationCode({
       phone: this.phone,
       type: 'login'
     }).then((success: boolean) => {
-      if (success) {
-        this.codeSent = true;
-        this.countdown = 60;
-        
-        promptAction.showToast({
-          message: '验证码已发送（测试环境请使用：123456）',
-          duration: 3000
-        });
-
-        this.countdownTimer = setInterval(() => {
-          this.countdown--;
-          if (this.countdown <= 0) {
-            clearInterval(this.countdownTimer);
-            this.countdown = 0;
-          }
-        }, 1000);
-      } else {
-        promptAction.showToast({
-          message: '发送验证码失败，请重试',
-          duration: 2000
-        });
+      if (!success) {
+        this.showToast(this.t('sendCodeFail'));
+        return;
       }
+
+      this.codeSent = true;
+      this.countdown = 60;
+      this.showToast(this.t('sendCodeSuccess'), 3000);
+
+      this.countdownTimer = setInterval(() => {
+        this.countdown--;
+        if (this.countdown <= 0) {
+          clearInterval(this.countdownTimer);
+          this.countdown = 0;
+        }
+      }, 1000);
     }).catch((err: Error) => {
-      console.error('发送验证码失败:', err);
-      promptAction.showToast({
-        message: err.message || '发送验证码失败，请重试',
-        duration: 2000
-      });
+      this.showToast(err.message || this.t('sendCodeFail'));
     });
   }
 
   handleLogin() {
-    console.info('开始登录流程');
-    
     if (!this.phone || !this.code) {
-      promptAction.showToast({
-        message: '请填写完整信息',
-        duration: 2000
-      });
+      this.showToast(this.t('missing'));
       return;
     }
 
     if (this.phone.length !== 11) {
-      promptAction.showToast({
-        message: '请输入正确的手机号',
-        duration: 2000
-      });
+      this.showToast(this.t('badPhone'));
       return;
     }
 
-    if (this.code.length < 4) {
-      promptAction.showToast({
-        message: '请输入正确的验证码',
-        duration: 2000
-      });
+    if (this.loginMode === 'sms' && this.code.length < 4) {
+      this.showToast(this.t('badCode'));
       return;
     }
 
-    console.info('验证通过，开始调用登录 API');
-    this.isLoading = true;
+    if (this.loginMode === 'password' && this.code.length < 6) {
+      this.showToast(this.t('badPassword'));
+      return;
+    }
 
-    // 调用登录 API
     const loginRequest: LoginRequest = {
       phone: this.phone,
-      password: this.code, // 使用验证码作为密码（临时方案）
-      loginType: 'sms'
+      password: this.code,
+      verificationCode: this.loginMode === 'sms' ? this.code : undefined,
+      loginType: this.loginMode
     };
-    
-    AuthService.login(loginRequest).then(async (response: LoginResponse) => {
-      console.info('登录成功:', JSON.stringify(response));
-      console.info(`[LoginPage] 当前存储模式: ${StorageUtil.getStorageMode()}`);
-      
-      // 验证 Token 是否保存成功（使用 getString 而不是 get）
-      const savedToken: string = await StorageUtil.getString('token');
-      console.info('[LoginPage] Token 保存验证:', savedToken ? '成功' : '失败');
-      console.info('[LoginPage] Token 值:', savedToken);
-      
-      // 再次读取确认
-      const verifyToken: string = await StorageUtil.getString('token');
-      console.info('[LoginPage] Token 二次验证:', verifyToken ? '成功' : '失败');
-      console.info('[LoginPage] Token 二次读取值:', verifyToken);
-      
+
+    this.isLoading = true;
+    AuthService.login(loginRequest).then((response: LoginResponse) => {
       this.isLoading = false;
-      
-      // 保存登录数据并触发状态变化
-      this.loginUserData = response;
-      this.loginSuccessful = true; // 这会触发 @Watch 回调
-      
-      console.info('登录流程完成，等待状态监听器触发跳转');
+      this.navigateAfterLogin(response);
     }).catch((err: Error) => {
-      console.error('登录失败:', err);
       this.isLoading = false;
-      console.error('登录失败，错误信息:', err.message);
-      
-      promptAction.showToast({
-        message: err.message || '登录失败，请重试',
-        duration: 2000
-      });
+      this.showToast(err.message || this.t('loginFail'));
     });
   }
 
@@ -235,17 +236,7 @@ struct LoginPage {
 
   build() {
     Column() {
-      if (this.isWatchLayout) {
-        Scroll() {
-          this.LoginContentColumn();
-        }
-        .width('100%')
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
-        .align(Alignment.TopStart)
-      } else {
-        this.LoginContentColumn();
-      }
+      this.LoginContentColumn();
     }
     .width('100%')
     .height('100%')
@@ -260,207 +251,224 @@ struct LoginPage {
 
   @Builder
   LoginContentColumn() {
-    Column({ space: this.isWatchLayout ? 14 : 40 }) {
-        // Logo & 标题 with animation
-        Column({ space: this.isWatchLayout ? 8 : 20 }) {
-          Row() {
-            Image($r('app.media.startIcon'))
-              .width(this.isWatchLayout ? 40 : 72)
-              .height(this.isWatchLayout ? 40 : 72)
-              .borderRadius(this.isWatchLayout ? 10 : 18)
-          }
-          .width(this.isWatchLayout ? 52 : 88)
-          .height(this.isWatchLayout ? 52 : 88)
-          .linearGradient({
-            angle: 135,
-            colors: [[0x3b82f6, 0.0], [0x6366f1, 1.0]]
-          })
-          .borderRadius(this.isWatchLayout ? 14 : 22)
-          .justifyContent(FlexAlign.Center)
-          .alignItems(VerticalAlign.Center)
-          .shadow(this.isWatchLayout ? undefined : {
-            radius: 20,
-            color: '#3b82f650',
-            offsetX: 0,
-            offsetY: 8
-          })
-          .scale({ x: this.logoScale, y: this.logoScale })
-
-          Column({ space: 8 }) {
-            Text('欢迎使用互助帮扶')
-              .fontSize(this.isWatchLayout
-                ? (this.largeFontEnabled ? 18 : 15)
-                : (this.largeFontEnabled ? 32.5 : 26))
-              .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Bold)
-              .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-              .letterSpacing(1)
-            
-            Text('让爱心触手可及')
-              .fontSize(this.isWatchLayout
-                ? (this.largeFontEnabled ? 18 : 15)
-                : (this.largeFontEnabled ? 18.75 : 15))
-              .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
-              .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Normal)
-          }
+    Column({ space: this.isWatchLayout ? 14 : 28 }) {
+      Column({ space: 8 }) {
+        Row() {
+          Image($r('app.media.startIcon'))
+            .width(this.isWatchLayout ? 38 : 64)
+            .height(this.isWatchLayout ? 38 : 64)
+            .borderRadius(this.isWatchLayout ? 10 : 18)
         }
-        .alignItems(HorizontalAlign.Center)
+        .width(this.isWatchLayout ? 50 : 84)
+        .height(this.isWatchLayout ? 50 : 84)
+        .linearGradient({
+          angle: 135,
+          colors: [[0x3b82f6, 0.0], [0x2563eb, 1.0]]
+        })
+        .borderRadius(this.isWatchLayout ? 14 : 22)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(VerticalAlign.Center)
+        .scale({ x: this.logoScale, y: this.logoScale })
+        .shadow({ radius: 18, color: '#3b82f640', offsetX: 0, offsetY: 6 })
 
-        // 登录表单 with animation
-        Column({ space: this.isWatchLayout ? 12 : 24 }) {
-          // 手机号输入
-          Column({ space: this.isWatchLayout ? 6 : 10 }) {
-            Text('手机号')
-              .fontSize(this.largeFontEnabled ? 17.5 : 14)
-              .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Medium)
-              .fontColor(this.highContrastEnabled ? '#000000' : '#374151')
-              .alignSelf(ItemAlign.Start)
+        Text(this.t('welcome'))
+          .fontSize(28)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#111827')
 
-            TextInput({ placeholder: '请输入手机号' })
-              .height(this.isWatchLayout
-                ? (this.largeFontEnabled ? 44 : 40)
-                : (this.largeFontEnabled ? 70 : 56))
-              .fontSize(this.largeFontEnabled ? 22.5 : 18)
-              .textAlign(TextAlign.Center)
-              .letterSpacing(2)
-              .maxLength(11)
-              .type(InputType.PhoneNumber)
-              .onChange((value: string) => {
-                this.phone = this.formatPhoneInput(value);
-              })
-              .borderRadius(14)
-              .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
-              .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-              .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Normal)
-              .border({
-                width: this.highContrastEnabled ? 3 : 2,
-                color: this.highContrastEnabled ? '#000000' : (this.phone.length > 0 ? '#3b82f6' : '#e5e7eb'),
-                radius: 14
-              })
-              .animation({
-                duration: 300,
-                curve: Curve.EaseInOut
-              })
-          }
+        Text(this.t('subtitle'))
+          .fontSize(this.isWatchLayout ? 13 : 18)
+          .fontColor('#64748b')
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Center)
 
-          // 验证码输入
-          Column({ space: this.isWatchLayout ? 6 : 10 }) {
-            Text('验证码')
-              .fontSize(this.largeFontEnabled ? 17.5 : 14)
-              .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Medium)
-              .fontColor(this.highContrastEnabled ? '#000000' : '#374151')
-              .alignSelf(ItemAlign.Start)
+      Scroll() {
+        Column({ space: this.isWatchLayout ? 14 : 20 }) {
+        Row({ space: 8 }) {
+          Button(this.t('smsLogin'))
+            .layoutWeight(1)
+            .height(this.isWatchLayout ? 36 : 46)
+            .fontSize(this.largeFontEnabled ? 16 : 14)
+            .fontWeight(FontWeight.Medium)
+            .backgroundColor(this.loginMode === 'sms' ? '#3b82f6' : '#ececec')
+            .fontColor(this.loginMode === 'sms' ? '#ffffff' : '#374151')
+            .borderRadius(12)
+            .shadow(this.loginMode === 'sms' ? { radius: 10, color: '#3b82f633', offsetX: 0, offsetY: 3 } : undefined)
+            .onClick(() => {
+              this.loginMode = 'sms';
+              this.code = '';
+              this.showPassword = false;
+            })
 
-            Row({ space: 12 }) {
-              TextInput({ placeholder: '请输入验证码' })
-                .height(this.isWatchLayout
-                  ? (this.largeFontEnabled ? 44 : 40)
-                  : (this.largeFontEnabled ? 70 : 56))
-                .fontSize(this.largeFontEnabled ? 22.5 : 18)
-                .textAlign(TextAlign.Center)
-                .letterSpacing(4)
-                .maxLength(6)
+          Button(this.t('passwordLogin'))
+            .layoutWeight(1)
+            .height(this.isWatchLayout ? 36 : 46)
+            .fontSize(this.largeFontEnabled ? 16 : 14)
+            .fontWeight(FontWeight.Medium)
+            .backgroundColor(this.loginMode === 'password' ? '#3b82f6' : '#ececec')
+            .fontColor(this.loginMode === 'password' ? '#ffffff' : '#374151')
+            .borderRadius(12)
+            .shadow(this.loginMode === 'password' ? { radius: 10, color: '#3b82f633', offsetX: 0, offsetY: 3 } : undefined)
+            .onClick(() => {
+              this.loginMode = 'password';
+              this.code = '';
+            })
+        }
+        .padding(6)
+        .backgroundColor('#f3f4f6')
+        .borderRadius(14)
+
+        Column({ space: 8 }) {
+          Text(this.t('phone'))
+            .fontSize(14)
+            .fontColor('#111827')
+            .alignSelf(ItemAlign.Start)
+
+          TextInput({ placeholder: this.t('phonePlaceholder'), text: this.phone })
+            .height(this.isWatchLayout ? 42 : 52)
+            .fontSize(this.largeFontEnabled ? 18 : 16)
+            .type(InputType.PhoneNumber)
+            .maxLength(11)
+            .onChange((value: string) => {
+              this.phone = this.formatPhoneInput(value);
+            })
+            .borderRadius(12)
+            .backgroundColor('#f8fafc')
+            .fontColor('#111827')
+            .border({ width: 1, color: '#d1d5db', radius: 12 })
+            .padding({ left: 14, right: 14 })
+        }
+
+        Column({ space: 8 }) {
+          Text(this.loginMode === 'sms' ? this.t('code') : this.t('password'))
+            .fontSize(14)
+            .fontColor('#111827')
+            .alignSelf(ItemAlign.Start)
+
+          if (this.loginMode === 'sms') {
+            Row({ space: 10 }) {
+              TextInput({ placeholder: this.t('codePlaceholder'), text: this.code })
+                .layoutWeight(1)
+                .height(this.isWatchLayout ? 42 : 52)
+                .fontSize(this.largeFontEnabled ? 18 : 16)
                 .type(InputType.Number)
+                .maxLength(6)
                 .onChange((value: string) => {
                   this.code = this.formatCodeInput(value);
                 })
-                .borderRadius(14)
-                .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
-                .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-                .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Normal)
-                .border({
-                  width: this.highContrastEnabled ? 3 : 2,
-                  color: this.highContrastEnabled ? '#000000' : (this.code.length > 0 ? '#3b82f6' : '#e5e7eb'),
-                  radius: 14
-                })
-                .layoutWeight(1)
-                .animation({
-                  duration: 300,
-                  curve: Curve.EaseInOut
-                })
+                .borderRadius(12)
+                .backgroundColor('#f8fafc')
+                .fontColor('#111827')
+                .border({ width: 1, color: '#d1d5db', radius: 12 })
+                .padding({ left: 14, right: 14 })
 
-              Button(this.countdown > 0 ? `${this.countdown}秒` : this.codeSent ? '重新发送' : '获取验证码')
-                .height(this.isWatchLayout
-                  ? (this.largeFontEnabled ? 44 : 40)
-                  : (this.largeFontEnabled ? 70 : 56))
-                .fontSize(this.largeFontEnabled ? 17.5 : 14)
-                .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Medium)
-                .backgroundColor(this.highContrastEnabled ? '#ffff00' : (this.phone.length === 11 && this.countdown === 0 ? '#f3f4f6' : '#e5e7eb'))
-                .fontColor(this.highContrastEnabled ? '#000000' : (this.phone.length === 11 && this.countdown === 0 ? '#374151' : '#9ca3af'))
-                .borderRadius(14)
-                .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
+              Button(this.getCodeButtonText())
+                .height(this.isWatchLayout ? 42 : 52)
+                .fontSize(13)
+                .backgroundColor(this.phone.length === 11 && this.countdown === 0 ? '#e8efff' : '#eef2f7')
+                .fontColor(this.phone.length === 11 && this.countdown === 0 ? '#2563eb' : '#9ca3af')
+                .borderRadius(12)
                 .enabled(this.phone.length === 11 && this.countdown === 0)
                 .onClick(() => {
                   this.handleSendCode();
                 })
             }
+          } else {
+            Row({ space: 8 }) {
+              TextInput({ placeholder: this.t('passwordPlaceholder'), text: this.code })
+                .layoutWeight(1)
+                .height(this.isWatchLayout ? 42 : 52)
+                .fontSize(this.largeFontEnabled ? 18 : 16)
+                .type(this.showPassword ? InputType.Normal : InputType.Password)
+                .maxLength(20)
+                .onChange((value: string) => {
+                  this.code = value;
+                })
+                .borderRadius(12)
+                .backgroundColor('#f8fafc')
+                .fontColor('#111827')
+                .border({ width: 1, color: '#d1d5db', radius: 12 })
+                .padding({ left: 14, right: 14 })
+
+              Button(this.showPassword ? this.t('hide') : this.t('show'))
+                .height(this.isWatchLayout ? 42 : 52)
+                .fontSize(12)
+                .backgroundColor('#eef2f7')
+                .fontColor('#64748b')
+                .borderRadius(12)
+                .onClick(() => {
+                  this.showPassword = !this.showPassword;
+                })
+            }
           }
+        }
 
-          // 登录按钮
-          Button(this.isLoading ? '登录中...' : '登录 / 注册')
-            .width('100%')
-            .height(this.isWatchLayout
-              ? (this.largeFontEnabled ? 46 : 42)
-              : (this.largeFontEnabled ? 70 : 56))
-            .fontSize(this.isWatchLayout
-              ? (this.largeFontEnabled ? 18 : 16)
-              : (this.largeFontEnabled ? 22.5 : 18))
-            .fontWeight(FontWeight.Bold)
-            .fontColor(this.highContrastEnabled ? '#000000' : '#ffffff')
-            .linearGradient(this.highContrastEnabled ? undefined : {
-              angle: 90,
-              colors: this.phone.length === 11 && this.code.length > 0 && !this.isLoading
-                ? [[0x3b82f6, 0.0], [0x6366f1, 1.0]]
-                : [[0xe5e7eb, 0.0], [0xe5e7eb, 1.0]]
-            })
-            .backgroundColor(this.highContrastEnabled ? '#ffff00' : undefined)
-            .borderRadius(14)
-            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-            .shadow(this.highContrastEnabled ? undefined : {
-              radius: this.phone.length === 11 && this.code.length > 0 && !this.isLoading ? 16 : 0,
-              color: '#3b82f640',
-              offsetX: 0,
-              offsetY: 8
-            })
-            .enabled(this.phone.length === 11 && this.code.length > 0 && !this.isLoading)
-            .onClick(() => {
-              this.handleLogin();
-            })
-            .animation({
-              duration: 300,
-              curve: Curve.EaseInOut
-            })
-
-          // 帮助文本
-          Column({ space: 6 }) {
-            Text('首次登录将自动创建账号')
-              .fontSize(this.largeFontEnabled ? 16.25 : 13)
-              .fontColor(this.highContrastEnabled ? '#000000' : '#9ca3af')
-              .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Normal)
-              .textAlign(TextAlign.Center)
-
-            Text('无需复杂注册流程')
-              .fontSize(this.largeFontEnabled ? 16.25 : 13)
-              .fontColor(this.highContrastEnabled ? '#000000' : '#3b82f6')
-              .textAlign(TextAlign.Center)
-              .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Medium)
+        if (this.loginMode === 'password') {
+          Row() {
+            Blank()
+            Text(this.t('forgot'))
+              .fontSize(13)
+              .fontColor('#2563eb')
           }
           .width('100%')
-          .margin({ top: 12 })
+        }
+
+        Button(this.isLoading ? this.t('loggingIn') : this.t('login'))
+          .width('100%')
+          .height(this.isWatchLayout ? 44 : 56)
+          .fontSize(this.isWatchLayout ? 18 : 22)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#ffffff')
+          .backgroundColor(this.phone.length === 11 && this.code.length > 0 && !this.isLoading ? '#3b82f6' : '#a5b4c7')
+          .borderRadius(14)
+          .shadow({ radius: 14, color: '#3b82f640', offsetX: 0, offsetY: 6 })
+          .enabled(this.phone.length === 11 && this.code.length > 0 && !this.isLoading)
+          .onClick(() => {
+            this.handleLogin();
+          })
+
+        Row() {
+          Divider().layoutWeight(1).color('#d1d5db')
+          Text(this.t('or'))
+            .fontSize(14)
+            .fontColor('#6b7280')
+            .margin({ left: 14, right: 14 })
+          Divider().layoutWeight(1).color('#d1d5db')
         }
         .width('100%')
-        .padding(this.isWatchLayout ? 10 : 32)
-        .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
-        .borderRadius(this.isWatchLayout ? 14 : 20)
-        .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-        .shadow(this.highContrastEnabled ? undefined : {
-          radius: 32,
-          color: '#0f000018',
-          offsetX: 0,
-          offsetY: 12
-        })
+        .alignItems(VerticalAlign.Center)
+
+        Button(this.t('register'))
+          .width('100%')
+          .height(this.isWatchLayout ? 42 : 54)
+          .fontSize(this.isWatchLayout ? 17 : 20)
+          .fontColor('#2563eb')
+          .backgroundColor('#ffffff')
+          .borderRadius(14)
+          .border({ width: 2, color: '#3b82f6', radius: 14 })
+          .onClick(() => {
+            router.pushUrl({
+              url: 'pages/RegisterPage'
+            }).catch((err: Error) => {
+              this.showToast(err.message || this.t('openRegisterFail'));
+            });
+          })
+        }
+        .width('100%')
+        .padding(this.isWatchLayout ? 14 : 26)
+        .backgroundColor('#f8fafc')
+        .borderRadius(this.isWatchLayout ? 18 : 28)
+        .shadow({ radius: 28, color: '#0f172a1a', offsetX: 0, offsetY: 10 })
         .opacity(this.formOpacity)
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .scrollBar(BarState.Off)
+      .align(Alignment.TopStart)
     }
     .width('100%')
     .constraintSize({ maxWidth: 420 })
+    .padding({ top: this.isWatchLayout ? 0 : 16, bottom: this.isWatchLayout ? 12 : 24 })
   }
 }

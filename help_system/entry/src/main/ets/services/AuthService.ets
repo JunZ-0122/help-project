@@ -18,7 +18,9 @@ import { StorageUtil } from '../utils/StorageUtil';
  */
 interface LoginRequestData {
   phone: string;
-  password: string;
+  password?: string;
+  verificationCode?: string;
+  loginType?: 'password' | 'sms';
 }
 
 /**
@@ -37,6 +39,7 @@ interface RegisterRequestData {
  */
 interface SendCodeData {
   phone: string;
+  type: 'login' | 'register' | 'reset-password';
 }
 
 /**
@@ -60,10 +63,11 @@ export class AuthService {
     try {
       // 根据登录类型调用不同的接口
       if (request.loginType === 'sms') {
-        // 验证码登录（当前后端使用验证码注册/登录）
+        // 验证码登录
         const loginData: LoginRequestData = {
           phone: request.phone,
-          password: request.verificationCode || '123456' // 临时使用固定密码
+          verificationCode: request.verificationCode || request.password,
+          loginType: 'sms'
         };
         const response = await HttpClient.post<LoginResponse>('/auth/login', loginData);
         
@@ -89,7 +93,8 @@ export class AuthService {
         // 密码登录
         const loginData: LoginRequestData = {
           phone: request.phone,
-          password: request.password
+          password: request.password,
+          loginType: 'password'
         };
         const response = await HttpClient.post<LoginResponse>('/auth/login', loginData);
         
@@ -154,7 +159,8 @@ export class AuthService {
   static async sendVerificationCode(request: VerificationCodeRequest): Promise<boolean> {
     try {
       const codeData: SendCodeData = {
-        phone: request.phone
+        phone: request.phone,
+        type: request.type
       };
       const response = await HttpClient.post<void>('/auth/send-code', codeData);
       return response.code === 200;

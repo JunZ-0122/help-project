@@ -6,7 +6,7 @@ export interface User {
   name: string;
   phone: string;
   avatar?: string;
-  role: 'help-seeker' | 'volunteer' | 'community';
+  role: 'default' | 'help-seeker' | 'volunteer' | 'community';
   status: 'online' | 'offline' | 'busy';
   createdAt?: string;
 }

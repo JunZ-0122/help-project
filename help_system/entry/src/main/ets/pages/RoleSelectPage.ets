@@ -48,7 +48,7 @@ struct RoleSelectPage {
     StorageUtil.get<UserProfile>('user').then((currentUser: UserProfile | null) => {
       console.log('[RoleSelect] Current user:', currentUser);
       
-      const hasRole = currentUser && !!currentUser.role;
+      const hasRole = !!(currentUser && currentUser.role && currentUser.role !== 'default');
       console.log('[RoleSelect] Has role:', hasRole);
 
       // 调用对应的 API

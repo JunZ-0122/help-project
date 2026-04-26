@@ -3,6 +3,7 @@
     "pages/Index",
     "pages/SplashPage",
     "pages/LoginPage", 
+    "pages/RegisterPage",
     "pages/RoleSelectPage",
     "pages/ErrorPage",
     "pages/help-seeker/HelpSeekerHomePage",

@@ -24,8 +24,6 @@
  * 属性：1 - 圆屏完全适配
  */
 
-import { AccessibilityManager } from '../utils/AccessibilityManager';
-
 @Component
 export struct WatchCircularLayout {
   // 绑定全局无障碍设置
@@ -36,9 +34,12 @@ export struct WatchCircularLayout {
   @Prop centerRadius: number = 120;        // 中心安全区域半径（dp）
   @Prop edgePadding: number = 16;          // 边缘安全距离（dp）
   @Prop bgColor: string = '#f8fafc';       // 背景颜色
-  @BuilderParam content: () => void;       // 子内容构建器
-  
-  private accessibilityManager = AccessibilityManager.getInstance();
+
+  @Builder
+  private defaultContentBuilder() {
+  }
+
+  @BuilderParam content: () => void = this.defaultContentBuilder; // 子内容构建器（提供默认空实现）
 
   /**
    * 计算实际的中心半径
@@ -74,32 +75,8 @@ export struct WatchCircularLayout {
     return (this.getActualCenterRadius() - this.getActualPadding()) * 2;
   }
 
-  /**
-   * 检查元素是否在圆形安全区域内
-   * 这是一个辅助方法，用于验证布局的正确性
-   */
-  private isInSafeArea(x: number, y: number): boolean {
-    const centerX = this.getActualCenterRadius();
-    const centerY = this.getActualCenterRadius();
-    const safeRadius = this.getActualCenterRadius() - this.getActualPadding();
-    
-    const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-    return distance <= safeRadius;
-  }
-
   build() {
     Stack() {
-      // 圆形安全区域指示器（仅在开发模式下显示）
-      if (false) { // 设置为 true 可在开发时显示安全区域边界
-        Circle()
-          .width(this.getCircularContainerSize())
-          .height(this.getCircularContainerSize())
-          .fill(Color.Transparent)
-          .stroke('#ff0000')
-          .strokeWidth(1)
-          .strokeDashArray([5, 5])
-      }
-
       // 主要内容容器
       Column() {
         // 使用 Scroll 确保内容可以滚动查看

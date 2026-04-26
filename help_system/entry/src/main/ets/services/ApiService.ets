@@ -17,9 +17,12 @@ import {
 } from '../models';
 import { StorageUtil } from '../utils/StorageUtil';
 
-// 预览器可用 127.0.0.1；鸿蒙模拟器通常需要访问宿主机映射地址。
-// 如果你在模拟器里连不上局域网 IP，优先改成 10.0.2.2 或宿主机可访问地址。
-const API_BASE_URL = 'http://10.0.2.2:8080/api';
+// 自动基址探测：优先 Previewer 本机地址，失败时回退到模拟器地址。
+// 如需真机调试，请把局域网地址放到第一个位置（例如 http://192.168.1.10:8080/api）。
+const API_BASE_URL_CANDIDATES: string[] = [
+  'http://127.0.0.1:8080/api',
+  'http://10.0.2.2:8080/api'
+];
 const REQUEST_TIMEOUT_MS = 20000;
 const REQUEST_RETRY_COUNT = 1;
 
@@ -33,9 +36,34 @@ interface QueryParam {
   value: string | number;
 }
 
+type HttpClientErrorLike = Error | string | Record<string, Object | string | number | boolean | undefined> | null | undefined;
+
 class HttpClient {
+  private static resolvedBaseUrl: string = API_BASE_URL_CANDIDATES[0];
+  private static hasResolvedBaseUrl: boolean = false;
+
   private static createRequest(): http.HttpRequest {
     return http.createHttp();
+  }
+
+  private static normalizeError(err: HttpClientErrorLike): Error {
+    if (err instanceof Error) {
+      return err;
+    }
+
+    if (typeof err === 'string') {
+      return new Error(err);
+    }
+
+    if (typeof err === 'object' && err !== null) {
+      const raw = err as Record<string, Object | string | number | boolean | undefined>;
+      const message = typeof raw['message'] === 'string'
+        ? raw['message'] as string
+        : JSON.stringify(raw);
+      return new Error(message);
+    }
+
+    return new Error(String(err));
   }
 
   private static async requestWithRetry(
@@ -50,18 +78,57 @@ class HttpClient {
       try {
         return await httpRequest.request(url, options);
       } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
+        lastError = HttpClient.normalizeError(err);
         const isLastAttempt = attempt >= retryCount;
         if (isLastAttempt) {
           throw lastError;
         }
-        console.warn(`[HttpClient] request failed, retrying... attempt=${attempt + 1}`, lastError.message);
+        console.warn(`[HttpClient] request failed, retrying... attempt=${attempt + 1}, message=${lastError.message}`);
       }
     }
 
     throw lastError;
   }
 
+  private static async probeBaseUrl(baseUrl: string): Promise<boolean> {
+    const probeRequest = HttpClient.createRequest();
+    try {
+      const healthUrl = `${baseUrl}/auth/send-code`;
+      await HttpClient.requestWithRetry(probeRequest, healthUrl, {
+        method: http.RequestMethod.POST,
+        header: { 'Content-Type': 'application/json' },
+        extraData: JSON.stringify({ phone: '13800000000', type: 'login' }),
+        readTimeout: 3000,
+        connectTimeout: 3000
+      }, 0);
+      return true;
+    } catch (_err) {
+      return false;
+    } finally {
+      probeRequest.destroy();
+    }
+  }
+
+  private static async getBaseUrl(): Promise<string> {
+    if (HttpClient.hasResolvedBaseUrl) {
+      return HttpClient.resolvedBaseUrl;
+    }
+
+    for (const candidate of API_BASE_URL_CANDIDATES) {
+      const ok = await HttpClient.probeBaseUrl(candidate);
+      if (ok) {
+        HttpClient.resolvedBaseUrl = candidate;
+        HttpClient.hasResolvedBaseUrl = true;
+        console.info(`[HttpClient] selected api base url: ${candidate}`);
+        return candidate;
+      }
+    }
+
+    HttpClient.hasResolvedBaseUrl = true;
+    HttpClient.resolvedBaseUrl = API_BASE_URL_CANDIDATES[0];
+    console.warn(`[HttpClient] api base url probe failed, fallback: ${HttpClient.resolvedBaseUrl}`);
+    return HttpClient.resolvedBaseUrl;
+  }
 
   private static async getHeaders(): Promise<RequestHeaders> {
     const headers: RequestHeaders = {
@@ -113,7 +180,8 @@ class HttpClient {
     const httpRequest = HttpClient.createRequest();
     const headers = await HttpClient.getHeaders();
 
-    let fullUrl = `${API_BASE_URL}${url}`;
+    const baseUrl = await HttpClient.getBaseUrl();
+    let fullUrl = `${baseUrl}${url}`;
     const queryString = HttpClient.buildQueryString(params);
     if (queryString.length > 0) {
       fullUrl += `?${queryString}`;
@@ -131,7 +199,7 @@ class HttpClient {
 
       return await HttpClient.handleResponse<T>(response);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const error = HttpClient.normalizeError(err);
       throw new Error(error.message ? error.message : 'get request failed');
     } finally {
       httpRequest.destroy();
@@ -141,7 +209,8 @@ class HttpClient {
   static async post<T>(url: string, data?: object): Promise<ApiResponse<T>> {
     const httpRequest = HttpClient.createRequest();
     const headers = await HttpClient.getHeaders();
-    const fullUrl: string = `${API_BASE_URL}${url}`;
+    const baseUrl = await HttpClient.getBaseUrl();
+    const fullUrl: string = `${baseUrl}${url}`;
     console.info('[HttpClient][POST] url=' + fullUrl);
     console.info('[HttpClient][POST] body=' + (data ? JSON.stringify(data) : ''));
 
@@ -156,7 +225,7 @@ class HttpClient {
 
       return await HttpClient.handleResponse<T>(response);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const error = HttpClient.normalizeError(err);
       throw new Error(error.message ? error.message : 'post request failed');
     } finally {
       httpRequest.destroy();
@@ -166,7 +235,8 @@ class HttpClient {
   static async put<T>(url: string, data?: object): Promise<ApiResponse<T>> {
     const httpRequest = HttpClient.createRequest();
     const headers = await HttpClient.getHeaders();
-    const fullUrl: string = `${API_BASE_URL}${url}`;
+    const baseUrl = await HttpClient.getBaseUrl();
+    const fullUrl: string = `${baseUrl}${url}`;
     console.info('[HttpClient][PUT] url=' + fullUrl);
     console.info('[HttpClient][PUT] body=' + (data ? JSON.stringify(data) : ''));
 
@@ -181,7 +251,7 @@ class HttpClient {
 
       return await HttpClient.handleResponse<T>(response);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const error = HttpClient.normalizeError(err);
       throw new Error(error.message ? error.message : 'put request failed');
     } finally {
       httpRequest.destroy();
@@ -191,7 +261,8 @@ class HttpClient {
   static async delete<T>(url: string): Promise<ApiResponse<T>> {
     const httpRequest = HttpClient.createRequest();
     const headers = await HttpClient.getHeaders();
-    const fullUrl: string = `${API_BASE_URL}${url}`;
+    const baseUrl = await HttpClient.getBaseUrl();
+    const fullUrl: string = `${baseUrl}${url}`;
     console.info('[HttpClient][DELETE] url=' + fullUrl);
 
     try {
@@ -204,7 +275,7 @@ class HttpClient {
 
       return await HttpClient.handleResponse<T>(response);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const error = HttpClient.normalizeError(err);
       throw new Error(error.message ? error.message : 'delete request failed');
     } finally {
       httpRequest.destroy();

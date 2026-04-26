@@ -30,7 +30,7 @@ export interface UserInfo {
   name: string;
   phone: string;
   avatar?: string;
-  role: 'help-seeker' | 'volunteer' | 'community';
+  role: 'default' | 'help-seeker' | 'volunteer' | 'community';
   status: 'active' | 'inactive' | 'banned';
 }
 
@@ -42,7 +42,7 @@ export interface RegisterRequest {
   password: string;
   verificationCode: string;
   name: string;
-  role: 'help-seeker' | 'volunteer';
+  role: 'default' | 'help-seeker' | 'volunteer' | 'community';
 }
 
 /**

@@ -19,6 +19,7 @@ interface MyRequestItem {
   statusDot: string;
   timeShort: string;
   locationShort: string;
+  volunteerId?: string;
   volunteerName?: string;
   unreadCount: number;
 }
@@ -115,6 +116,7 @@ struct MyRequestsPage {
           statusDot: item.statusDot,
           timeShort: item.timeShort,
           locationShort: item.locationShort,
+          volunteerId: item.volunteerId,
           volunteerName: item.volunteerName,
           unreadCount: count
         };
@@ -132,6 +134,7 @@ struct MyRequestsPage {
           statusDot: item.statusDot,
           timeShort: item.timeShort,
           locationShort: item.locationShort,
+          volunteerId: item.volunteerId,
           volunteerName: item.volunteerName,
           unreadCount: 0
         };
@@ -155,6 +158,7 @@ struct MyRequestsPage {
       statusDot: colors.dot,
       timeShort: DateUtil.format(request.createdAt, 'HH:mm'),
       locationShort: this.shortPlace(request.location),
+      volunteerId: request.volunteerId,
       volunteerName: request.volunteerName,
       unreadCount: 0
     };
@@ -252,6 +256,10 @@ struct MyRequestsPage {
     return request.statusKey === 'pending' || request.statusKey === 'assigned';
   }
 
+  private canChat(request: MyRequestItem): boolean {
+    return !!request.volunteerId && request.statusKey !== 'pending' && request.statusKey !== 'cancelled';
+  }
+
   private isHighlighted(request: MyRequestItem): boolean {
     return this.highlightRequestId !== '' && request.id === this.highlightRequestId;
   }
@@ -276,6 +284,24 @@ struct MyRequestsPage {
       url: 'pages/help-seeker/RequestDetailPage',
       params: {
         id: requestId
+      }
+    }).catch((err: Error) => {
+      console.error('navigation failed:', err);
+    });
+  }
+
+  private openChat(request: MyRequestItem) {
+    if (!this.canChat(request) || !request.volunteerId) {
+      this.showToast('当前暂无可用聊天对象');
+      return;
+    }
+
+    router.pushUrl({
+      url: 'pages/volunteer/ChatPage',
+      params: {
+        volunteerId: request.volunteerId,
+        volunteerName: request.volunteerName ? request.volunteerName : '志愿者',
+        requestId: request.id
       }
     }).catch((err: Error) => {
       console.error('navigation failed:', err);
@@ -420,14 +446,34 @@ struct MyRequestsPage {
       .alignItems(VerticalAlign.Center)
 
       if (request.volunteerName && request.statusKey !== 'pending') {
-        Row() {
-          Blank()
+        Row({ space: 10 }) {
           Text(`\u5fd7\u613f\u8005: ${request.volunteerName}`)
             .fontSize(this.largeFontEnabled ? 15 : 13)
             .fontWeight(FontWeight.Medium)
             .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.accentBlue : '#2563eb')
+
+          Blank()
+
+          if (this.canChat(request)) {
+            Button(request.unreadCount > 0 ? `联系志愿者 (${request.unreadCount})` : '联系志愿者')
+              .type(ButtonType.Normal)
+              .height(this.largeFontEnabled ? 34 : 30)
+              .fontSize(this.largeFontEnabled ? 14 : 12)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#2563eb')
+              .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.tagBg : '#eff6ff')
+              .borderRadius(99)
+              .border(this.highContrastEnabled
+                ? { width: ElderHighContrastTheme.borderWidth, color: ElderHighContrastTheme.borderStrong }
+                : { width: 1, color: '#bfdbfe' })
+              .padding({ left: 10, right: 10 })
+              .onClick(() => {
+                this.openChat(request);
+              })
+          }
         }
         .width('100%')
+        .alignItems(VerticalAlign.Center)
       }
 
       if (this.canCancel(request)) {

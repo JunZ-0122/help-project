@@ -533,6 +533,7 @@ struct ChatPage {
               .height(8)
           }
           .width('100%')
+          .justifyContent(FlexAlign.Start)
           .padding({ left: 12, right: 12, top: 12 })
         }
         .layoutWeight(1)
