@@ -9,6 +9,7 @@ import java.util.List;
  */
 public class SeekerRequestDetailVo {
     private HelpRequest request;
+    private String orderId;
     /** 顶部胶囊文案：已发布 / 已接单 / 志愿者已出发 / 已完成 */
     private String badgeLabel;
     /** published | accepted | departed | completed | cancelled */
@@ -27,6 +28,14 @@ public class SeekerRequestDetailVo {
 
     public void setRequest(HelpRequest request) {
         this.request = request;
+    }
+
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
     }
 
     public String getBadgeLabel() {

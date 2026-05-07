@@ -1,5 +1,4 @@
 import router from '@ohos.router';
-import { promptAction } from '@kit.ArkUI';
 import { NavBackButton } from '../../components/NavBackButton';
 import { DateUtil } from '../../utils/DateUtil';
 import { MessageApi, RequestApi } from '../../services/ApiService';
@@ -32,16 +31,12 @@ struct ChatPage {
   @State isSending: boolean = false;
   @State pageTitle: string = '\u804a\u5929';
   @State connectionStatus: WebSocketConnectionStatus = 'disconnected';
-  @State inputMethod: 'text' | 'handwriting' | 'voice' = 'text';
 
   private webSocketService = WebSocketService.getInstance();
   private hasConnectedOnce: boolean = false;
 
   aboutToAppear() {
-    console.error('=== CHATPAGE ABOUTTOAPPEAR CALLED ===');
     const params = router.getParams() as Record<string, string>;
-    console.error('ChatPage aboutToAppear - params:', JSON.stringify(params));
-    
     if (params) {
       if (params['requestId']) {
         this.requestId = params['requestId'] as string;
@@ -55,9 +50,6 @@ struct ChatPage {
         this.targetUserName = params['volunteerName'] as string;
       }
     }
-    
-    console.error(`ChatPage aboutToAppear - requestId: ${this.requestId}, targetUserId: ${this.targetUserId}`);
-    console.error('=== CALLING loadChatData ===');
     this.loadChatData();
   }
 
@@ -71,11 +63,7 @@ struct ChatPage {
   }
 
   private async loadChatData(): Promise<void> {
-    console.error('=== loadChatData CALLED ===');
-    console.error(`loadChatData - requestId: ${this.requestId}`);
-    
     if (!this.requestId) {
-      console.error('loadChatData - No requestId, aborting');
       this.isLoading = false;
       return;
     }
@@ -84,44 +72,30 @@ struct ChatPage {
 
     try {
       const currentUser: UserProfile | null = await StorageUtil.get<UserProfile>('user');
-      console.error(`loadChatData - currentUser: ${currentUser ? currentUser.id : 'null'}`);
-      
       if (!currentUser || !currentUser.id) {
         throw new Error('\u7528\u6237\u767b\u5f55\u72b6\u6001\u5f02\u5e38');
       }
 
       this.currentUserId = currentUser.id;
       this.currentUserRole = currentUser.role;
-      console.error(`loadChatData - Set currentUserId: ${this.currentUserId}, role: ${this.currentUserRole}`);
 
       const request: HelpRequest = await RequestApi.getRequestDetail(this.requestId);
-      console.error(`loadChatData - Got request detail: id=${request.id}, userId=${request.userId}, volunteerId=${request.volunteerId}`);
-      
       this.resolveChatTarget(request);
 
       const history: ChatMessage[] = await MessageApi.getChatHistory(this.requestId, 1);
-      console.error(`loadChatData - Got ${history.length} messages from history`);
-      
       this.messages = history.map((message: ChatMessage) => this.mapMessage(message));
       await this.markUnreadMessagesAsRead(history);
       await this.connectRealtimeChannel();
-      
-      console.error('loadChatData - Completed successfully');
     } catch (err) {
       const error = err as Error;
       console.error('load chat data failed:', error.message || error);
-      console.error('load chat data error stack:', error.stack);
     } finally {
       this.isLoading = false;
     }
   }
 
   private resolveChatTarget(request: HelpRequest): void {
-    console.info(`resolveChatTarget - currentUserRole: ${this.currentUserRole}, currentUserId: ${this.currentUserId}`);
-    console.info(`resolveChatTarget - request.userId: ${request.userId}, request.volunteerId: ${request.volunteerId}`);
-    
     if (this.currentUserRole === 'help-seeker' || this.currentUserId === request.userId) {
-      // 当前用户是求助者，目标用户是志愿者
       if (!this.targetUserId) {
         this.targetUserId = request.volunteerId ? request.volunteerId : '';
       }
@@ -129,15 +103,12 @@ struct ChatPage {
         this.targetUserName = request.volunteerName ? request.volunteerName : '\u5fd7\u613f\u8005';
       }
       this.pageTitle = this.targetUserName;
-      console.info(`resolveChatTarget - Set target as volunteer: ${this.targetUserId}`);
       return;
     }
 
-    // 当前用户是志愿者，目标用户是求助者
     this.targetUserId = request.userId ? request.userId : '';
     this.targetUserName = request.userName ? request.userName : '\u6c42\u52a9\u8005';
     this.pageTitle = this.targetUserName;
-    console.info(`resolveChatTarget - Set target as help-seeker: ${this.targetUserId}`);
   }
 
   private async markUnreadMessagesAsRead(history: ChatMessage[]): Promise<void> {
@@ -301,23 +272,11 @@ struct ChatPage {
 
   handleSend() {
     const text: string = this.inputText.trim();
-    console.error('=== CRITICAL DEBUG START ===');
-    console.error(`handleSend CALLED - text: "${text}"`);
-    console.error(`handleSend CALLED - targetUserId: "${this.targetUserId}"`);
-    console.error(`handleSend CALLED - requestId: "${this.requestId}"`);
-    console.error(`handleSend CALLED - currentUserId: "${this.currentUserId}"`);
-    console.error(`handleSend CALLED - currentUserRole: "${this.currentUserRole}"`);
-    console.error(`handleSend CALLED - isSending: ${this.isSending}`);
-    console.error('=== CRITICAL DEBUG END ===');
-    
     if (!text || !this.targetUserId || this.isSending) {
-      console.warn(`handleSend - Cannot send: text=${!!text}, targetUserId=${!!this.targetUserId}, isSending=${this.isSending}`);
       return;
     }
 
     this.isSending = true;
-    console.info(`handleSend - Sending message to ${this.targetUserId} for request ${this.requestId}`);
-
     MessageApi.sendMessage({
       requestId: this.requestId,
       receiverId: this.targetUserId,
@@ -328,55 +287,10 @@ struct ChatPage {
       nextMessages.push(this.mapMessage(message));
       this.messages = nextMessages;
       this.inputText = '';
-      console.info('message sent successfully');
     }).catch((err: Error) => {
       console.error('send message failed:', err.message || err);
     }).finally(() => {
       this.isSending = false;
-    });
-  }
-
-  handleInputMethodChange(method: 'text' | 'handwriting' | 'voice') {
-    console.info(`input method changed to: ${method}`);
-    
-    if (method === 'handwriting') {
-      this.showHandwritingInput();
-    } else if (method === 'voice') {
-      this.showVoiceInput();
-    } else {
-      this.inputMethod = method;
-    }
-  }
-
-  showHandwritingInput() {
-    AlertDialog.show({
-      title: '手写输入',
-      message: '手写输入功能开发中，敬请期待！\n\n未来将支持：\n• 手写识别\n• 多字连写\n• 自动转换文字',
-      autoCancel: true,
-      alignment: DialogAlignment.Bottom,
-      offset: { dx: 0, dy: -20 },
-      primaryButton: {
-        value: '知道了',
-        action: () => {
-          console.info('handwriting dialog dismissed');
-        }
-      }
-    });
-  }
-
-  showVoiceInput() {
-    AlertDialog.show({
-      title: '语音输入',
-      message: '语音输入功能开发中，敬请期待！\n\n未来将支持：\n• 语音识别\n• 方言识别\n• 自动转换文字',
-      autoCancel: true,
-      alignment: DialogAlignment.Bottom,
-      offset: { dx: 0, dy: -20 },
-      primaryButton: {
-        value: '知道了',
-        action: () => {
-          console.info('voice dialog dismissed');
-        }
-      }
     });
   }
 
@@ -538,72 +452,11 @@ struct ChatPage {
         }
         .layoutWeight(1)
         .scrollBar(BarState.Off)
+        .align(Alignment.TopStart)
         .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#f9fafb')
       }
 
       Column() {
-        Row({ space: 8 }) {
-          Button() {
-            Text('文字')
-              .fontSize(this.largeFontEnabled ? 15 : 12)
-              .fontColor(this.inputMethod === 'text' ?
-                (this.highContrastEnabled ? '#000000' : '#ffffff') :
-                (this.highContrastEnabled ? '#000000' : '#6b7280'))
-              .fontWeight(this.inputMethod === 'text' ? FontWeight.Bold : FontWeight.Normal)
-          }
-          .height(this.largeFontEnabled ? 36 : 30)
-          .padding({ left: 12, right: 12 })
-          .backgroundColor(this.inputMethod === 'text' ?
-            (this.highContrastEnabled ? '#ffff00' : '#3b82f6') :
-            (this.highContrastEnabled ? '#ffff00' : '#f3f4f6'))
-          .borderRadius(this.largeFontEnabled ? 18 : 15)
-          .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
-          .onClick(() => {
-            this.handleInputMethodChange('text');
-          })
-
-          Button() {
-            Text('手写')
-              .fontSize(this.largeFontEnabled ? 15 : 12)
-              .fontColor(this.inputMethod === 'handwriting' ?
-                (this.highContrastEnabled ? '#000000' : '#ffffff') :
-                (this.highContrastEnabled ? '#000000' : '#6b7280'))
-              .fontWeight(this.inputMethod === 'handwriting' ? FontWeight.Bold : FontWeight.Normal)
-          }
-          .height(this.largeFontEnabled ? 36 : 30)
-          .padding({ left: 12, right: 12 })
-          .backgroundColor(this.inputMethod === 'handwriting' ?
-            (this.highContrastEnabled ? '#ffff00' : '#3b82f6') :
-            (this.highContrastEnabled ? '#ffff00' : '#f3f4f6'))
-          .borderRadius(this.largeFontEnabled ? 18 : 15)
-          .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
-          .onClick(() => {
-            this.handleInputMethodChange('handwriting');
-          })
-
-          Button() {
-            Text('语音')
-              .fontSize(this.largeFontEnabled ? 15 : 12)
-              .fontColor(this.inputMethod === 'voice' ?
-                (this.highContrastEnabled ? '#000000' : '#ffffff') :
-                (this.highContrastEnabled ? '#000000' : '#6b7280'))
-              .fontWeight(this.inputMethod === 'voice' ? FontWeight.Bold : FontWeight.Normal)
-          }
-          .height(this.largeFontEnabled ? 36 : 30)
-          .padding({ left: 12, right: 12 })
-          .backgroundColor(this.inputMethod === 'voice' ?
-            (this.highContrastEnabled ? '#ffff00' : '#3b82f6') :
-            (this.highContrastEnabled ? '#ffff00' : '#f3f4f6'))
-          .borderRadius(this.largeFontEnabled ? 18 : 15)
-          .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
-          .onClick(() => {
-            this.handleInputMethodChange('voice');
-          })
-        }
-        .width('100%')
-        .padding({ left: 12, right: 12, top: 8, bottom: 4 })
-        .justifyContent(FlexAlign.Start)
-
         Row({ space: 10 }) {
           TextInput({
             placeholder: '\u8bf4\u70b9\u4ec0\u4e48...',
@@ -647,7 +500,7 @@ struct ChatPage {
             this.handleSend();
           })
         }
-        .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+        .padding({ left: 12, right: 12, top: 12, bottom: 12 })
       }
       .width('100%')
       .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')

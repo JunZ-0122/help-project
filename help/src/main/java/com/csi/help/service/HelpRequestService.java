@@ -171,6 +171,13 @@ public class HelpRequestService {
     }
 
     public void cancel(String id) {
+        HelpRequest existing = getById(id);
+        if ("completed".equals(existing.getStatus())) {
+            throw new RuntimeException("已完成的求助不能取消");
+        }
+        if ("cancelled".equals(existing.getStatus())) {
+            return;
+        }
         helpRequestMapper.delete(id);
     }
 
@@ -255,6 +262,7 @@ public class HelpRequestService {
         VolunteerOrder order = volunteerOrderMapper.findByRequestId(requestId);
         SeekerRequestDetailVo vo = new SeekerRequestDetailVo();
         vo.setRequest(r);
+        vo.setOrderId(order != null ? order.getId() : null);
         vo.setHeaderTimeDisplay(r.getCreatedAt() != null ? r.getCreatedAt().format(HEADER_DT) : "");
 
         String st = r.getStatus();

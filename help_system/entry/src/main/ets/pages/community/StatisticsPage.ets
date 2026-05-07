@@ -12,6 +12,11 @@ interface StatItem {
   g1: number;
 }
 
+interface RuntimeMetricItem {
+  label: string;
+  value: string;
+}
+
 @Entry
 @Component
 struct StatisticsPage {
@@ -146,6 +151,24 @@ struct StatisticsPage {
     const arr = this.stats.weeklyTrend?.map((item: WeeklyTrendItem) => item.count) || [];
     const maxCount = Math.max(...arr, 1);
     return 36 + (count / maxCount) * 72;
+  }
+
+  private buildRuntimeMetrics(): RuntimeMetricItem[] {
+    const responseTime = this.stats.averageResponseTime !== undefined ? this.stats.averageResponseTime : 0;
+    const completionTime = this.stats.averageCompletionTime !== undefined ? this.stats.averageCompletionTime : 0;
+    return [
+      { label: '\u4eca\u65e5\u65b0\u589e\u6c42\u52a9', value: `${this.stats.todayRequests}` },
+      { label: '\u4eca\u65e5\u5b8c\u6210\u670d\u52a1', value: `${this.stats.todayCompleted}` },
+      { label: '\u5e73\u5747\u54cd\u5e94\u65f6\u95f4', value: this.formatMinutesMetric(responseTime) },
+      { label: '\u5e73\u5747\u5b8c\u6210\u65f6\u95f4', value: this.formatMinutesMetric(completionTime) }
+    ];
+  }
+
+  private formatMinutesMetric(value: number): string {
+    if (!value || value <= 0) {
+      return '--';
+    }
+    return `${value.toFixed(1)} \u5206\u949f`;
   }
 
   @Builder
@@ -332,6 +355,42 @@ struct StatisticsPage {
                 }, (stat: StatItem, idx: number) => `stat-${idx}`)
               }
               .width('100%')
+            }
+            .width('100%')
+
+            Column({ space: 12 }) {
+              Text('\u8fd0\u884c\u6307\u6807')
+                .fontSize(this.largeFontEnabled ? 19 : 16)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#0f172a')
+                .width('100%')
+
+              Column({ space: 10 }) {
+                ForEach(this.buildRuntimeMetrics(), (item: RuntimeMetricItem) => {
+                  Row() {
+                    Text(item.label)
+                      .fontSize(this.largeFontEnabled ? 16 : 14)
+                      .fontColor('#475569')
+                      .layoutWeight(1)
+
+                    Text(item.value)
+                      .fontSize(this.largeFontEnabled ? 17 : 14)
+                      .fontColor('#0f172a')
+                      .fontWeight(FontWeight.Medium)
+                  }
+                  .width('100%')
+                }, (item: RuntimeMetricItem) => item.label)
+              }
+              .width('100%')
+              .padding(16)
+              .backgroundColor('#ffffff')
+              .borderRadius(16)
+              .border({ width: 1, color: '#f1f5f9' })
+              .shadow({
+                radius: 10,
+                color: '#0f172a0d',
+                offsetY: 3
+              })
             }
             .width('100%')
 

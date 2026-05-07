@@ -344,6 +344,10 @@ interface ReviewRequestPayload {
   status: string;
 }
 
+interface RequestStatusPayload {
+  status: string;
+}
+
 export interface CreateEmergencyRequestPayload {
   type: string;
   description: string;
@@ -500,8 +504,16 @@ export class RequestApi {
     return requireData(response, 'get watch request status failed');
   }
 
+  static async updateRequest(id: string, request: Partial<HelpRequest>): Promise<HelpRequest> {
+    const response = await HttpClient.put<HelpRequest>(`/requests/${id}`, request);
+    return requireData(response, 'update request failed');
+  }
+
   static async cancelRequest(id: string): Promise<boolean> {
-    const response = await HttpClient.delete<void>(`/requests/${id}`);
+    const payload: RequestStatusPayload = {
+      status: 'cancelled'
+    };
+    const response = await HttpClient.put<HelpRequest>(`/requests/${id}`, payload);
     return response.code === 200;
   }
 }

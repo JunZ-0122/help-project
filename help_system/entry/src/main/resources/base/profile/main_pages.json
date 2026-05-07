@@ -12,6 +12,7 @@
     "pages/help-seeker/ProfilePage",
     "pages/help-seeker/RequestTypePage",
     "pages/help-seeker/RequestDetailPage",
+    "pages/help-seeker/ReviewPage",
     "pages/volunteer/VolunteerHomePage",
     "pages/volunteer/RequestDetailPage",
     "pages/volunteer/ChatPage",

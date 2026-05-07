@@ -10,10 +10,18 @@ interface TimelineItem {
   label: string;
 }
 
+interface RequesterView {
+  name: string;
+  phone: string;
+  ageText?: string;
+  address?: string;
+}
+
 interface VolunteerView {
   id: string;
   name: string;
   phone: string;
+  address?: string;
 }
 
 interface RequestDetailView {
@@ -24,8 +32,7 @@ interface RequestDetailView {
   status: string;
   statusLabel: string;
   createdAt: string;
-  requesterName: string;
-  requesterPhone: string;
+  requester: RequesterView;
   volunteer?: VolunteerView;
   timeline: TimelineItem[];
 }
@@ -35,7 +42,7 @@ interface RequestDetailView {
 struct RequestDetailPage {
   @StorageLink('accessibility_large_font') largeFontEnabled: boolean = false;
   @StorageLink('accessibility_high_contrast') highContrastEnabled: boolean = false;
-  
+
   @State requestId: string = '';
   @State isLoading: boolean = true;
   @State actionLoading: boolean = false;
@@ -47,8 +54,10 @@ struct RequestDetailPage {
     status: 'pending',
     statusLabel: '\u5f85\u5206\u914d',
     createdAt: '',
-    requesterName: '',
-    requesterPhone: '',
+    requester: {
+      name: '',
+      phone: ''
+    },
     timeline: []
   };
 
@@ -67,7 +76,6 @@ struct RequestDetailPage {
       this.skipNextPageShow = false;
       return;
     }
-
     if (this.requestId) {
       this.loadRequestDetail();
     }
@@ -83,8 +91,9 @@ struct RequestDetailPage {
 
     try {
       const request: HelpRequest = await RequestApi.getRequestDetail(this.requestId);
+      const requester = await this.loadRequester(request);
       const volunteer = await this.loadVolunteer(request);
-      this.request = this.mapRequest(request, volunteer);
+      this.request = this.mapRequest(request, requester, volunteer);
     } catch (err) {
       const error = err as Error;
       console.error('load community request detail failed:', error);
@@ -94,6 +103,25 @@ struct RequestDetailPage {
       });
     } finally {
       this.isLoading = false;
+    }
+  }
+
+  private async loadRequester(request: HelpRequest): Promise<RequesterView> {
+    try {
+      const profile: UserProfile = await UserApi.getUserProfile(request.userId);
+      const ageText = profile.age !== undefined && profile.age !== null ? `${profile.age}\u5c81` : undefined;
+      return {
+        name: profile.name ? profile.name : request.userName,
+        phone: profile.phone ? profile.phone : request.userPhone,
+        ageText: ageText,
+        address: profile.address ? profile.address : request.location
+      };
+    } catch (_err) {
+      return {
+        name: request.userName,
+        phone: request.userPhone,
+        address: request.location
+      };
     }
   }
 
@@ -107,10 +135,10 @@ struct RequestDetailPage {
       return {
         id: request.volunteerId,
         name: profile.name ? profile.name : (request.volunteerName ? request.volunteerName : '\u5fd7\u613f\u8005'),
-        phone: profile.phone ? profile.phone : ''
+        phone: profile.phone ? profile.phone : '',
+        address: profile.address ? profile.address : ''
       };
-    } catch (err) {
-      console.error('load community volunteer failed:', err);
+    } catch (_err) {
       return {
         id: request.volunteerId,
         name: request.volunteerName ? request.volunteerName : '\u5fd7\u613f\u8005',
@@ -119,8 +147,7 @@ struct RequestDetailPage {
     }
   }
 
-  private mapRequest(request: HelpRequest, volunteer?: VolunteerView): RequestDetailView {
-    const updatedSource: string = request.updatedAt ? request.updatedAt : request.createdAt;
+  private mapRequest(request: HelpRequest, requester: RequesterView, volunteer?: VolunteerView): RequestDetailView {
     return {
       id: request.id,
       title: request.title,
@@ -129,32 +156,30 @@ struct RequestDetailPage {
       status: request.status,
       statusLabel: this.getStatusLabel(request.status),
       createdAt: DateUtil.format(request.createdAt, 'YYYY-MM-DD HH:mm'),
-      requesterName: request.userName,
-      requesterPhone: request.userPhone,
+      requester: requester,
       volunteer: volunteer,
-      timeline: this.buildTimeline(request.status, updatedSource)
+      timeline: this.buildTimeline(request)
     };
   }
 
-  private buildTimeline(status: string, updatedSource: string): TimelineItem[] {
-    const updatedAt = DateUtil.format(updatedSource, 'HH:mm');
-    const items: TimelineItem[] = [
-      { time: updatedAt, label: '\u6c42\u52a9\u5df2\u53d1\u5e03' }
-    ];
+  private buildTimeline(request: HelpRequest): TimelineItem[] {
+    const createdAt = DateUtil.format(request.createdAt, 'HH:mm');
+    const updatedAt = DateUtil.format(request.updatedAt ? request.updatedAt : request.createdAt, 'HH:mm');
+    const items: TimelineItem[] = [{ time: createdAt, label: '\u6c42\u52a9\u5df2\u53d1\u5e03' }];
 
-    if (status === 'assigned' || status === 'in-progress' || status === 'completed') {
+    if (request.status === 'assigned' || request.status === 'in-progress' || request.status === 'completed') {
       items.push({ time: updatedAt, label: '\u5df2\u5206\u914d\u5fd7\u613f\u8005' });
     }
-    if (status === 'in-progress' || status === 'completed') {
+    if (request.status === 'in-progress' || request.status === 'completed') {
       items.push({ time: updatedAt, label: '\u670d\u52a1\u8fdb\u884c\u4e2d' });
     }
-    if (status === 'completed') {
-      items.push({ time: updatedAt, label: '\u670d\u52a1\u5df2\u5b8c\u6210' });
+    if (request.status === 'completed') {
+      const completedTimeSource = request.completedAt ? request.completedAt : (request.updatedAt ? request.updatedAt : request.createdAt);
+      items.push({ time: DateUtil.format(completedTimeSource, 'HH:mm'), label: '\u670d\u52a1\u5df2\u5b8c\u6210' });
     }
-    if (status === 'cancelled') {
+    if (request.status === 'cancelled') {
       items.push({ time: updatedAt, label: '\u6c42\u52a9\u5df2\u53d6\u6d88' });
     }
-
     return items;
   }
 
@@ -180,16 +205,15 @@ struct RequestDetailPage {
   private getStatusColor(status: string): string {
     switch (status) {
       case 'assigned':
-        return '#3b82f6';
+        return '#2563eb';
       case 'in-progress':
-        return '#f59e0b';
+        return '#d97706';
       case 'completed':
-        return '#10b981';
+      case 'approved':
+        return '#059669';
       case 'cancelled':
       case 'rejected':
-        return '#ef4444';
-      case 'approved':
-        return '#10b981';
+        return '#dc2626';
       default:
         return '#6b7280';
     }
@@ -253,7 +277,7 @@ struct RequestDetailPage {
     try {
       await RequestApi.cancelRequest(this.requestId);
       promptAction.showToast({ message: '\u5df2\u53d6\u6d88\u6c42\u52a9', duration: 1500 });
-      router.back();
+      await this.loadRequestDetail();
     } catch (err) {
       const e = err as Error;
       promptAction.showToast({ message: e.message ? e.message : '\u53d6\u6d88\u5931\u8d25', duration: 2000 });
@@ -263,397 +287,174 @@ struct RequestDetailPage {
   }
 
   @Builder
-  TimelineItemBuilder(item: TimelineItem, isLast: boolean) {
-    Row({ space: this.largeFontEnabled ? 16 : 12 }) {
-      Column() {
-        // 时间线圆点 - 参考设计使用更大的圆点
-        Row()
-          .width(this.largeFontEnabled ? 18 : 16)
-          .height(this.largeFontEnabled ? 18 : 16)
-          .backgroundColor(this.highContrastEnabled ? '#000000' : '#10b981') // 使用绿色
-          .borderRadius(this.largeFontEnabled ? 9 : 8)
-          .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : { width: 3, color: '#ffffff' })
-          .shadow(this.highContrastEnabled ? undefined : {
-            radius: 4,
-            color: '#10b98140',
-            offsetX: 0,
-            offsetY: 2
-          })
+  InfoRow(label: string, value: string) {
+    Row({ space: 12 }) {
+      Text(label)
+        .fontSize(this.largeFontEnabled ? 16 : 13)
+        .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
+        .width(this.largeFontEnabled ? 110 : 92)
 
-        if (!isLast) {
-          Row()
-            .width(this.largeFontEnabled ? 3 : 2)
-            .height(this.largeFontEnabled ? 50 : 40)
-            .backgroundColor(this.highContrastEnabled ? '#000000' : '#e5e7eb')
-            .margin({ top: 8 })
-        }
-      }
-      .alignItems(HorizontalAlign.Center)
-
-      Column({ space: this.largeFontEnabled ? 8 : 6 }) {
-        Text(item.label)
-          .fontSize(this.largeFontEnabled ? 17 : 15)
-          .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-          .fontWeight(FontWeight.Medium)
-        Text(item.time)
-          .fontSize(this.largeFontEnabled ? 15 : 13)
-          .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
-      }
-      .alignItems(HorizontalAlign.Start)
-      .layoutWeight(1)
-      .padding({ bottom: this.largeFontEnabled ? 20 : 16 })
+      Text(value && value.trim().length > 0 ? value : '--')
+        .fontSize(this.largeFontEnabled ? 17 : 14)
+        .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
+        .layoutWeight(1)
     }
+    .width('100%')
     .alignItems(VerticalAlign.Top)
   }
 
   build() {
     Column() {
-      // 顶部导航栏 - 增强样式
-      Row({ space: this.largeFontEnabled ? 15 : 12 }) {
+      Row({ space: 12 }) {
         NavBackButton()
-
         Text('\u6c42\u52a9\u8be6\u60c5')
           .fontSize(this.largeFontEnabled ? 22.5 : 18)
           .fontWeight(FontWeight.Bold)
-          .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
+          .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
           .layoutWeight(1)
       }
       .width('100%')
       .padding(this.largeFontEnabled ? 20 : 16)
       .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
       .border({ width: { bottom: this.highContrastEnabled ? 3 : 1 }, color: this.highContrastEnabled ? '#000000' : '#e5e7eb' })
-      .shadow(this.highContrastEnabled ? undefined : {
-        radius: 4,
-        color: '#0f00000a',
-        offsetX: 0,
-        offsetY: 2
-      })
 
       if (this.isLoading) {
         Column({ space: 16 }) {
           LoadingProgress()
-            .width(this.largeFontEnabled ? 45 : 36)
-            .height(this.largeFontEnabled ? 45 : 36)
-            .color(this.highContrastEnabled ? '#000000' : '#3b82f6')
+            .width(36)
+            .height(36)
           Text('\u52a0\u8f7d\u4e2d...')
             .fontSize(this.largeFontEnabled ? 20 : 16)
             .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
         }
-        .width('100%')
         .layoutWeight(1)
+        .width('100%')
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-        .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#f9fafb')
       } else {
         Scroll() {
-          Column({ space: this.largeFontEnabled ? 20 : 16 }) {
-            // 状态和标题卡片 - 增强样式
-            Column({ space: this.largeFontEnabled ? 16 : 12 }) {
-              // 状态徽章 - 使用动态颜色
+          Column({ space: 16 }) {
+            Column({ space: 12 }) {
               Text(this.request.statusLabel)
-                .fontSize(this.largeFontEnabled ? 17 : 14)
+                .fontSize(this.largeFontEnabled ? 16 : 13)
                 .fontColor(this.highContrastEnabled ? '#000000' : this.getStatusColor(this.request.status))
                 .fontWeight(FontWeight.Bold)
-                .padding({ 
-                  left: this.largeFontEnabled ? 20 : 16, 
-                  right: this.largeFontEnabled ? 20 : 16, 
-                  top: this.largeFontEnabled ? 10 : 8, 
-                  bottom: this.largeFontEnabled ? 10 : 8 
-                })
-                .backgroundColor(this.highContrastEnabled ? '#ffff00' : this.getStatusBgColor(this.request.status))
-                .borderRadius(this.largeFontEnabled ? 25 : 20)
-                .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
-                .shadow(this.highContrastEnabled ? undefined : {
-                  radius: 4,
-                  color: this.getStatusColor(this.request.status) + '30',
-                  offsetX: 0,
-                  offsetY: 2
-                })
+                .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+                .backgroundColor(this.highContrastEnabled ? '#ffffff' : this.getStatusBgColor(this.request.status))
+                .borderRadius(999)
 
               Text(this.request.title)
-                .fontSize(this.largeFontEnabled ? 25 : 20)
+                .fontSize(this.largeFontEnabled ? 24 : 20)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
+                .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
 
               Text(this.request.createdAt)
                 .fontSize(this.largeFontEnabled ? 15 : 12)
                 .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
             }
             .width('100%')
-            .padding(this.largeFontEnabled ? 25 : 20)
+            .alignItems(HorizontalAlign.Start)
+            .padding(this.largeFontEnabled ? 22 : 18)
             .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
             .borderRadius(16)
-            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-            .shadow(this.highContrastEnabled ? undefined : {
-              radius: 8,
-              color: '#0f00001a',
-              offsetX: 0,
-              offsetY: 4
-            })
+            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : { width: 1, color: '#e5e7eb' })
 
-            // 求助信息卡片 - 增强样式
-            Column({ space: this.largeFontEnabled ? 16 : 12 }) {
-              Row({ space: 8 }) {
-                Text('📝')
-                  .fontSize(this.largeFontEnabled ? 22 : 18)
-                Text('\u6c42\u52a9\u4fe1\u606f')
-                  .fontSize(this.largeFontEnabled ? 20 : 16)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-              }
-              
+            Column({ space: 12 }) {
+              Text('\u6c42\u52a9\u4fe1\u606f')
+                .fontSize(this.largeFontEnabled ? 20 : 16)
+                .fontWeight(FontWeight.Bold)
+                .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
+                .width('100%')
               Text(this.request.description)
                 .fontSize(this.largeFontEnabled ? 17 : 14)
-                .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-                .lineHeight(this.largeFontEnabled ? 26 : 22)
-                
-              Row({ space: 8 }) {
-                Text('📍')
-                  .fontSize(this.largeFontEnabled ? 18 : 16)
-                Text(`${this.request.location}`)
-                  .fontSize(this.largeFontEnabled ? 17 : 14)
-                  .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
-              }
-              .alignItems(VerticalAlign.Center)
+                .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
+                .lineHeight(this.largeFontEnabled ? 28 : 22)
+              this.InfoRow('\u53d1\u751f\u5730\u70b9', this.request.location)
             }
             .width('100%')
-            .padding(this.largeFontEnabled ? 25 : 20)
+            .padding(this.largeFontEnabled ? 22 : 18)
             .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
             .borderRadius(16)
-            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-            .shadow(this.highContrastEnabled ? undefined : {
-              radius: 8,
-              color: '#0f00001a',
-              offsetX: 0,
-              offsetY: 4
-            })
-            .alignItems(HorizontalAlign.Start)
+            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : { width: 1, color: '#e5e7eb' })
 
-            // 求助人信息卡片 - 参考设计优化
-            Column({ space: this.largeFontEnabled ? 20 : 16 }) {
+            Column({ space: 12 }) {
               Text('\u6c42\u52a9\u4eba\u4fe1\u606f')
                 .fontSize(this.largeFontEnabled ? 20 : 16)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-              
-              // 用户头像和基本信息
-              Row({ space: this.largeFontEnabled ? 16 : 12 }) {
-                // 圆形头像容器
-                Row() {
-                  Text('👤')
-                    .fontSize(this.largeFontEnabled ? 28 : 24)
-                    .fontColor('#ffffff')
-                }
-                .width(this.largeFontEnabled ? 65 : 60)
-                .height(this.largeFontEnabled ? 65 : 60)
-                .backgroundColor(this.highContrastEnabled ? '#000000' : '#9ca3af')
-                .borderRadius(this.largeFontEnabled ? 32.5 : 30)
-                .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-                .justifyContent(FlexAlign.Center)
-                .shadow(this.highContrastEnabled ? undefined : {
-                  radius: 6,
-                  color: '#0f00001a',
-                  offsetX: 0,
-                  offsetY: 2
-                })
-
-                Column({ space: 6 }) {
-                  Text(this.request.requesterName)
-                    .fontSize(this.largeFontEnabled ? 20 : 18)
-                    .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-                    .fontWeight(FontWeight.Bold)
-                  
-                  Text('年龄：68岁') // 可以从后端获取年龄信息
-                    .fontSize(this.largeFontEnabled ? 16 : 14)
-                    .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
-                }
-                .alignItems(HorizontalAlign.Start)
-                .layoutWeight(1)
+                .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
+                .width('100%')
+              this.InfoRow('\u59d3\u540d', this.request.requester.name)
+              if (this.request.requester.ageText) {
+                this.InfoRow('\u5e74\u9f84', this.request.requester.ageText!)
               }
-              
-              // 联系方式标题
-              Text('联系方式')
-                .fontSize(this.largeFontEnabled ? 17 : 14)
-                .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
-                .margin({ top: this.largeFontEnabled ? 8 : 4 })
-              
-              // 电话号码
-              Text(this.request.requesterPhone)
-                .fontSize(this.largeFontEnabled ? 18 : 16)
-                .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-                .fontWeight(FontWeight.Medium)
-              
-              // 操作按钮
-              Row({ space: this.largeFontEnabled ? 12 : 10 }) {
-                Button() {
-                  Row({ space: 8 }) {
-                    Text('📞')
-                      .fontSize(this.largeFontEnabled ? 18 : 16)
-                    Text('拨打电话')
-                      .fontSize(this.largeFontEnabled ? 16 : 14)
-                      .fontColor('#ffffff')
-                      .fontWeight(FontWeight.Medium)
-                  }
-                }
-                .layoutWeight(1)
-                .height(this.largeFontEnabled ? 48 : 44)
-                .backgroundColor(this.highContrastEnabled ? '#000000' : '#10b981')
-                .borderRadius(this.largeFontEnabled ? 24 : 22)
-                .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-                .shadow(this.highContrastEnabled ? undefined : {
-                  radius: 6,
-                  color: '#10b98130',
-                  offsetX: 0,
-                  offsetY: 2
-                })
-
-                Button() {
-                  Row({ space: 8 }) {
-                    Text('💬')
-                      .fontSize(this.largeFontEnabled ? 18 : 16)
-                    Text('发送消息')
-                      .fontSize(this.largeFontEnabled ? 16 : 14)
-                      .fontColor('#ffffff')
-                      .fontWeight(FontWeight.Medium)
-                  }
-                }
-                .layoutWeight(1)
-                .height(this.largeFontEnabled ? 48 : 44)
-                .backgroundColor(this.highContrastEnabled ? '#000000' : '#3b82f6')
-                .borderRadius(this.largeFontEnabled ? 24 : 22)
-                .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-                .shadow(this.highContrastEnabled ? undefined : {
-                  radius: 6,
-                  color: '#3b82f630',
-                  offsetX: 0,
-                  offsetY: 2
-                })
+              this.InfoRow('\u8054\u7cfb\u7535\u8bdd', this.request.requester.phone)
+              if (this.request.requester.address) {
+                this.InfoRow('\u5e38\u7528\u5730\u5740', this.request.requester.address!)
               }
-              .margin({ top: this.largeFontEnabled ? 16 : 12 })
             }
             .width('100%')
-            .padding(this.largeFontEnabled ? 25 : 20)
+            .padding(this.largeFontEnabled ? 22 : 18)
             .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
             .borderRadius(16)
-            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-            .shadow(this.highContrastEnabled ? undefined : {
-              radius: 8,
-              color: '#0f00001a',
-              offsetX: 0,
-              offsetY: 4
-            })
-            .alignItems(HorizontalAlign.Start)
+            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : { width: 1, color: '#e5e7eb' })
 
-            // 志愿者信息卡片 - 参考设计优化
             if (this.request.volunteer) {
-              Column({ space: this.largeFontEnabled ? 20 : 16 }) {
+              Column({ space: 12 }) {
                 Text('\u5df2\u5206\u914d\u5fd7\u613f\u8005')
                   .fontSize(this.largeFontEnabled ? 20 : 16)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-                
-                // 志愿者头像和基本信息
-                Row({ space: this.largeFontEnabled ? 16 : 12 }) {
-                  // 圆形头像容器 - 蓝色主题
-                  Row() {
-                    Text('👨‍⚕️')
-                      .fontSize(this.largeFontEnabled ? 28 : 24)
-                  }
-                  .width(this.largeFontEnabled ? 65 : 60)
-                  .height(this.largeFontEnabled ? 65 : 60)
-                  .backgroundColor(this.highContrastEnabled ? '#000000' : '#3b82f6')
-                  .borderRadius(this.largeFontEnabled ? 32.5 : 30)
-                  .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-                  .justifyContent(FlexAlign.Center)
-                  .shadow(this.highContrastEnabled ? undefined : {
-                    radius: 6,
-                    color: '#3b82f630',
-                    offsetX: 0,
-                    offsetY: 2
-                  })
-
-                  Column({ space: 6 }) {
-                    Text(this.request.volunteer.name)
-                      .fontSize(this.largeFontEnabled ? 20 : 18)
-                      .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-                      .fontWeight(FontWeight.Bold)
-                    
-                    Row({ space: 6 }) {
-                      Text('📍')
-                        .fontSize(this.largeFontEnabled ? 14 : 12)
-                      Text('距离 2.1公里') // 可以从后端获取距离信息
-                        .fontSize(this.largeFontEnabled ? 15 : 13)
-                        .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
-                    }
-                  }
-                  .alignItems(HorizontalAlign.Start)
-                  .layoutWeight(1)
+                  .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
+                  .width('100%')
+                this.InfoRow('\u59d3\u540d', this.request.volunteer.name)
+                this.InfoRow('\u8054\u7cfb\u7535\u8bdd', this.request.volunteer.phone)
+                if (this.request.volunteer.address) {
+                  this.InfoRow('\u5e38\u7528\u5730\u5740', this.request.volunteer.address!)
                 }
-                
-                // 联系方式标题
-                Text('联系方式')
-                  .fontSize(this.largeFontEnabled ? 17 : 14)
-                  .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
-                  .margin({ top: this.largeFontEnabled ? 8 : 4 })
-                
-                // 电话号码
-                Text(this.request.volunteer.phone ? this.request.volunteer.phone : '\u6682\u65e0\u7535\u8bdd')
-                  .fontSize(this.largeFontEnabled ? 18 : 16)
-                  .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-                  .fontWeight(FontWeight.Medium)
               }
               .width('100%')
-              .padding(this.largeFontEnabled ? 25 : 20)
+              .padding(this.largeFontEnabled ? 22 : 18)
               .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
               .borderRadius(16)
-              .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-              .shadow(this.highContrastEnabled ? undefined : {
-                radius: 8,
-                color: '#0f00001a',
-                offsetX: 0,
-                offsetY: 4
-              })
-              .alignItems(HorizontalAlign.Start)
+              .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : { width: 1, color: '#e5e7eb' })
             }
 
-            // 进度跟踪卡片 - 参考设计优化
-            Column({ space: this.largeFontEnabled ? 20 : 16 }) {
+            Column({ space: 12 }) {
               Text('\u5904\u7406\u8fdb\u5ea6')
                 .fontSize(this.largeFontEnabled ? 20 : 16)
                 .fontWeight(FontWeight.Bold)
-                .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
-              
-              Column({ space: this.largeFontEnabled ? 4 : 2 }) {
-                ForEach(this.request.timeline, (item: TimelineItem, index: number) => {
-                  this.TimelineItemBuilder(item, index === this.request.timeline.length - 1)
-                })
-              }
+                .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
+                .width('100%')
+              ForEach(this.request.timeline, (item: TimelineItem) => {
+                Row({ space: 10 }) {
+                  Text(item.time)
+                    .fontSize(this.largeFontEnabled ? 15 : 12)
+                    .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
+                    .width(this.largeFontEnabled ? 70 : 58)
+                  Text(item.label)
+                    .fontSize(this.largeFontEnabled ? 17 : 14)
+                    .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
+                    .layoutWeight(1)
+                }
+                .width('100%')
+              })
             }
             .width('100%')
-            .padding(this.largeFontEnabled ? 25 : 20)
+            .padding(this.largeFontEnabled ? 22 : 18)
             .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
             .borderRadius(16)
-            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
-            .shadow(this.highContrastEnabled ? undefined : {
-              radius: 8,
-              color: '#0f00001a',
-              offsetX: 0,
-              offsetY: 4
-            })
-            .alignItems(HorizontalAlign.Start)
+            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : { width: 1, color: '#e5e7eb' })
           }
           .width('100%')
           .padding(this.largeFontEnabled ? 20 : 16)
         }
         .layoutWeight(1)
         .scrollBar(BarState.Off)
-        .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#f9fafb')
+        .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#f8fafc')
 
-        // 底部操作按钮 - 审核/重分配/取消
         if (this.request.status === 'pending' || this.request.status === 'assigned') {
-          Column({ space: this.largeFontEnabled ? 12 : 10 }) {
+          Column({ space: 10 }) {
             if (this.request.status === 'pending') {
-              Row({ space: this.largeFontEnabled ? 12 : 10 }) {
+              Row({ space: 10 }) {
                 Button('\u5ba1\u6838\u901a\u8fc7')
                   .layoutWeight(1)
                   .height(this.largeFontEnabled ? 50 : 44)
@@ -709,8 +510,6 @@ struct RequestDetailPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#f9fafb')
+    .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#f8fafc')
   }
 }
-
-

@@ -1,11 +1,11 @@
 import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { NavBackButton } from '../../components/NavBackButton';
-import { MessageApi, RequestApi } from '../../services/ApiService';
+import { MessageApi, RequestApi, ReviewApi } from '../../services/ApiService';
 import { WebSocketService } from '../../services/WebSocketService';
 import { StorageUtil } from '../../utils/StorageUtil';
 import { ElderHighContrastTheme } from '../../utils/AccessibilityTheme';
-import type { ChatMessage, SeekerRequestDetail, SeekerTimelineItem, SeekerVolunteerBlock } from '../../models';
+import type { ChatMessage, Review, SeekerRequestDetail, SeekerTimelineItem, SeekerVolunteerBlock } from '../../models';
 
 interface RequestDetailRouteParams {
   id?: string;
@@ -22,6 +22,7 @@ struct RequestDetailPage {
   @State loadError: string = '';
   @State unreadCount: number = 0;
   @State detail: SeekerRequestDetail | null = null;
+  @State hasSubmittedReview: boolean = false;
 
   private webSocketService = WebSocketService.getInstance();
   private skipNextPageShow: boolean = true;
@@ -66,6 +67,7 @@ struct RequestDetailPage {
       const data: SeekerRequestDetail = await RequestApi.getSeekerRequestDetail(this.requestId);
       this.detail = data;
       await this.refreshUnreadCount();
+      await this.loadReviewStatus();
       await this.connectRealtimeChannel();
     } catch (err) {
       const error = err as Error;
@@ -83,9 +85,23 @@ struct RequestDetailPage {
   private async refreshUnreadCount(): Promise<void> {
     try {
       this.unreadCount = await MessageApi.countUnread(this.requestId);
-    } catch (err) {
-      console.error('load unread count failed:', err);
+    } catch (_err) {
       this.unreadCount = 0;
+    }
+  }
+
+  private async loadReviewStatus(): Promise<void> {
+    const orderId = this.detail && this.detail.orderId ? this.detail.orderId : '';
+    if (!orderId) {
+      this.hasSubmittedReview = false;
+      return;
+    }
+
+    try {
+      const review: Review | null = await ReviewApi.getOrderReview(orderId);
+      this.hasSubmittedReview = review !== null;
+    } catch (_err) {
+      this.hasSubmittedReview = false;
     }
   }
 
@@ -105,23 +121,6 @@ struct RequestDetailPage {
     });
   }
 
-  private getCategoryLabel(type: string): string {
-    switch (type) {
-      case 'medical':
-        return '\u533b\u7597';
-      case 'shopping':
-        return '\u751f\u6d3b';
-      case 'repair':
-        return '\u751f\u6d3b';
-      case 'companion':
-        return '\u51fa\u884c';
-      case 'emergency':
-        return '\u7d27\u6025';
-      default:
-        return '\u5176\u4ed6';
-    }
-  }
-
   private getVolunteerInitial(vol: SeekerVolunteerBlock): string {
     const n = vol.name;
     if (!n || n.length === 0) {
@@ -130,54 +129,14 @@ struct RequestDetailPage {
     return n.substring(0, 1);
   }
 
-  private timelineDotColor(item: SeekerTimelineItem): string {
-    if (this.highContrastEnabled) {
-      if (item.state === 'done') {
-        return ElderHighContrastTheme.accentOn;
-      }
-      if (item.state === 'current') {
-        return ElderHighContrastTheme.accentBlue;
-      }
-      return ElderHighContrastTheme.divider;
-    }
-    if (item.state === 'done') {
-      return '#10b981';
-    }
-    if (item.state === 'current') {
-      return '#2563eb';
-    }
-    return '#d1d5db';
-  }
-
-  /**
-   * 步骤下方的竖线：与当前节点状态一致。
-   * 「已完成」步骤向下的线段用绿色；「进行中」用蓝色；未到步骤保持灰线。
-   */
-  private timelineLineColorAfterItem(item: SeekerTimelineItem): string {
-    if (this.highContrastEnabled) {
-      if (item.state === 'done') {
-        return ElderHighContrastTheme.accentOn;
-      }
-      if (item.state === 'current') {
-        return ElderHighContrastTheme.accentBlue;
-      }
-      return '#e5e7eb';
-    }
-    if (item.state === 'done') {
-      return '#10b981';
-    }
-    if (item.state === 'current') {
-      return '#2563eb';
-    }
-    return '#e5e7eb';
-  }
-
-  private isLastTimelineIndex(index: number): boolean {
-    const d = this.detail;
-    if (d === null || d.timeline === undefined) {
-      return false;
-    }
-    return index === d.timeline.length - 1;
+  private canReviewVolunteer(): boolean {
+    return !!(
+      this.detail &&
+      this.detail.request.status === 'completed' &&
+      this.detail.orderId &&
+      this.detail.volunteer &&
+      !this.hasSubmittedReview
+    );
   }
 
   goBack() {
@@ -220,33 +179,26 @@ struct RequestDetailPage {
     });
   }
 
-  @Builder
-  StatusBadge() {
-    if (!this.detail) {
-      Blank();
-    } else {
-      Row({ space: 6 }) {
-        Row()
-          .width(this.largeFontEnabled ? 8 : 6)
-          .height(this.largeFontEnabled ? 8 : 6)
-          .borderRadius(99)
-          .backgroundColor(this.badgeDotColor(this.detail.badgeTone))
-
-        Text(this.detail.badgeLabel)
-          .fontSize(this.largeFontEnabled ? 15 : 13)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(this.badgeTextColor(this.detail.badgeTone))
-      }
-      .padding({
-        left: 12,
-        right: 12,
-        top: 6,
-        bottom: 6
-      })
-      .backgroundColor(this.badgeBgColor(this.detail.badgeTone))
-      .borderRadius(99)
-      .border(this.highContrastEnabled ? ElderHighContrastTheme.cardBorder() : undefined)
+  openReviewPage() {
+    if (!this.detail || !this.detail.orderId || !this.detail.volunteer) {
+      promptAction.showToast({
+        message: '\u6682\u65e0\u53ef\u8bc4\u4ef7\u5bf9\u8c61',
+        duration: 1500
+      });
+      return;
     }
+
+    router.pushUrl({
+      url: 'pages/help-seeker/ReviewPage',
+      params: {
+        orderId: this.detail.orderId,
+        revieweeId: this.detail.volunteer.id,
+        revieweeName: this.detail.volunteer.name,
+        title: this.detail.request.title
+      }
+    }).catch((err: Error) => {
+      console.error('navigation failed:', err);
+    });
   }
 
   private badgeBgColor(tone: string): string {
@@ -322,22 +274,83 @@ struct RequestDetailPage {
     }
   }
 
+  private timelineDotColor(item: SeekerTimelineItem): string {
+    if (this.highContrastEnabled) {
+      if (item.state === 'done') {
+        return ElderHighContrastTheme.accentOn;
+      }
+      if (item.state === 'current') {
+        return ElderHighContrastTheme.accentBlue;
+      }
+      return ElderHighContrastTheme.divider;
+    }
+    if (item.state === 'done') {
+      return '#10b981';
+    }
+    if (item.state === 'current') {
+      return '#2563eb';
+    }
+    return '#d1d5db';
+  }
+
+  private timelineLineColorAfterItem(item: SeekerTimelineItem): string {
+    if (this.highContrastEnabled) {
+      if (item.state === 'done') {
+        return ElderHighContrastTheme.accentOn;
+      }
+      if (item.state === 'current') {
+        return ElderHighContrastTheme.accentBlue;
+      }
+      return '#e5e7eb';
+    }
+    if (item.state === 'done') {
+      return '#10b981';
+    }
+    if (item.state === 'current') {
+      return '#2563eb';
+    }
+    return '#e5e7eb';
+  }
+
+  private isLastTimelineIndex(index: number): boolean {
+    const d = this.detail;
+    if (d === null || d.timeline === undefined) {
+      return false;
+    }
+    return index === d.timeline.length - 1;
+  }
+
+  @Builder
+  StatusBadge() {
+    if (this.detail) {
+      Row({ space: 6 }) {
+        Row()
+          .width(this.largeFontEnabled ? 8 : 6)
+          .height(this.largeFontEnabled ? 8 : 6)
+          .borderRadius(99)
+          .backgroundColor(this.badgeDotColor(this.detail.badgeTone))
+
+        Text(this.detail.badgeLabel)
+          .fontSize(this.largeFontEnabled ? 15 : 13)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.badgeTextColor(this.detail.badgeTone))
+      }
+      .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+      .backgroundColor(this.badgeBgColor(this.detail.badgeTone))
+      .borderRadius(99)
+      .border(this.highContrastEnabled ? ElderHighContrastTheme.cardBorder() : undefined)
+    }
+  }
+
   @Builder
   BannerBlock() {
     if (this.detail && this.detail.banner) {
       Column({ space: 6 }) {
-        Row({ space: 8 }) {
-          Text('\u23f0')
-            .fontSize(this.largeFontEnabled ? 22 : 18)
-          Text(this.detail.banner.title)
-            .fontSize(this.largeFontEnabled ? 18 : 15)
-            .fontWeight(FontWeight.Medium)
-            .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
-            .layoutWeight(1)
-        }
-        .width('100%')
-        .alignItems(VerticalAlign.Center)
-
+        Text(this.detail.banner.title)
+          .fontSize(this.largeFontEnabled ? 18 : 15)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
+          .width('100%')
         Text(this.detail.banner.subtitle)
           .fontSize(this.largeFontEnabled ? 16 : 13)
           .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary :
@@ -376,28 +389,15 @@ struct RequestDetailPage {
           .justifyContent(FlexAlign.Center)
 
           Column({ space: 6 }) {
-            Row({ space: 8 }) {
-              Text(this.detail.volunteer.name)
-                .fontSize(this.largeFontEnabled ? 20 : 16)
-                .fontWeight(FontWeight.Bold)
-                .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
-
-              Text('\u5fd7\u613f\u8005')
-                .fontSize(this.largeFontEnabled ? 13 : 11)
-                .fontColor('#1d4ed8')
-                .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-                .backgroundColor('#dbeafe')
-                .borderRadius(99)
-            }
+            Text(this.detail.volunteer.name)
+              .fontSize(this.largeFontEnabled ? 20 : 16)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
 
             if (this.detail.volunteer.distanceKm !== undefined && this.detail.volunteer.distanceKm !== null) {
-              Row({ space: 4 }) {
-                Text('\ud83d\udccd')
-                  .fontSize(this.largeFontEnabled ? 15 : 12)
-                Text(`\u8ddd\u79bb ${this.detail.volunteer.distanceKm}\u516c\u91cc`)
-                  .fontSize(this.largeFontEnabled ? 16 : 13)
-                  .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#6b7280')
-              }
+              Text(`\u8ddd\u79bb ${this.detail.volunteer.distanceKm}\u516c\u91cc`)
+                .fontSize(this.largeFontEnabled ? 16 : 13)
+                .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#6b7280')
             }
           }
           .alignItems(HorizontalAlign.Start)
@@ -406,39 +406,39 @@ struct RequestDetailPage {
         .width('100%')
 
         Row({ space: 12 }) {
-          Button() {
-            Row({ space: 6 }) {
-              Text('\u260e')
-                .fontColor('#ffffff')
-              Text('\u62e8\u6253\u7535\u8bdd')
-                .fontColor('#ffffff')
-                .fontSize(this.largeFontEnabled ? 16 : 14)
-            }
-          }
-          .layoutWeight(1)
-          .height(this.largeFontEnabled ? 52 : 44)
-          .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.accentOn : '#22c55e')
-          .borderRadius(12)
-          .border(this.highContrastEnabled ? { width: ElderHighContrastTheme.borderWidth, color: ElderHighContrastTheme.borderStrong } : undefined)
-          .onClick(() => this.showVolunteerPhone())
+          Button('\u67e5\u770b\u7535\u8bdd')
+            .layoutWeight(1)
+            .height(this.largeFontEnabled ? 52 : 44)
+            .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.accentOn : '#22c55e')
+            .fontColor('#ffffff')
+            .borderRadius(12)
+            .border(this.highContrastEnabled ? { width: ElderHighContrastTheme.borderWidth, color: ElderHighContrastTheme.borderStrong } : undefined)
+            .onClick(() => this.showVolunteerPhone())
 
-          Button() {
-            Row({ space: 6 }) {
-              Text('\u2709')
-                .fontColor('#ffffff')
-              Text(this.unreadCount > 0
-                ? `\u53d1\u9001\u6d88\u606f (${this.unreadCount})`
-                : '\u53d1\u9001\u6d88\u606f')
-                .fontColor('#ffffff')
-                .fontSize(this.largeFontEnabled ? 16 : 14)
-            }
-          }
-          .layoutWeight(1)
-          .height(this.largeFontEnabled ? 52 : 44)
-          .borderRadius(12)
-          .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.accentBlue : '#6366f1')
-          .border(this.highContrastEnabled ? { width: ElderHighContrastTheme.borderWidth, color: ElderHighContrastTheme.borderStrong } : undefined)
-          .onClick(() => this.openChat())
+          Button(this.unreadCount > 0 ? `\u53d1\u9001\u6d88\u606f (${this.unreadCount})` : '\u53d1\u9001\u6d88\u606f')
+            .layoutWeight(1)
+            .height(this.largeFontEnabled ? 52 : 44)
+            .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.accentBlue : '#6366f1')
+            .fontColor('#ffffff')
+            .borderRadius(12)
+            .border(this.highContrastEnabled ? { width: ElderHighContrastTheme.borderWidth, color: ElderHighContrastTheme.borderStrong } : undefined)
+            .onClick(() => this.openChat())
+        }
+
+        if (this.canReviewVolunteer()) {
+          Button('\u53bb\u8bc4\u4ef7\u5fd7\u613f\u8005')
+            .width('100%')
+            .height(this.largeFontEnabled ? 52 : 44)
+            .backgroundColor(this.highContrastEnabled ? '#000000' : '#2563eb')
+            .fontColor('#ffffff')
+            .borderRadius(12)
+            .border(this.highContrastEnabled ? { width: ElderHighContrastTheme.borderWidth, color: ElderHighContrastTheme.borderStrong } : undefined)
+            .onClick(() => this.openReviewPage())
+        } else if (this.detail.request.status === 'completed' && this.hasSubmittedReview) {
+          Text('\u60a8\u5df2\u5b8c\u6210\u5bf9\u5fd7\u613f\u8005\u7684\u8bc4\u4ef7')
+            .fontSize(this.largeFontEnabled ? 16 : 13)
+            .fontColor(this.highContrastEnabled ? '#000000' : '#059669')
+            .width('100%')
         }
 
         Row() {
@@ -451,7 +451,6 @@ struct RequestDetailPage {
             .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
         }
         .width('100%')
-        .padding({ top: 4 })
       }
       .width('100%')
       .padding(16)
@@ -477,46 +476,29 @@ struct RequestDetailPage {
           .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
           .width('100%')
 
-        Column({ space: 4 }) {
-          Text('\u6c42\u52a9\u7c7b\u578b')
+        Text(this.detail.request.description)
+          .fontSize(this.largeFontEnabled ? 18 : 15)
+          .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
+          .lineHeight(this.largeFontEnabled ? 28 : 22)
+
+        Row({ space: 8 }) {
+          Text('\u7c7b\u578b')
             .fontSize(this.largeFontEnabled ? 15 : 12)
             .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#6b7280')
-          Text(this.getCategoryLabel(this.detail.request.type))
-            .fontSize(this.largeFontEnabled ? 18 : 15)
+          Text(this.detail.request.type)
+            .fontSize(this.largeFontEnabled ? 16 : 13)
             .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
         }
-        .alignItems(HorizontalAlign.Start)
-        .width('100%')
 
-        Column({ space: 4 }) {
-          Text('\u8be6\u7ec6\u8bf4\u660e')
-            .fontSize(this.largeFontEnabled ? 15 : 12)
-            .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#6b7280')
-          Text(this.detail.request.description)
-            .fontSize(this.largeFontEnabled ? 18 : 15)
-            .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
-            .lineHeight(this.largeFontEnabled ? 28 : 22)
-        }
-        .alignItems(HorizontalAlign.Start)
-        .width('100%')
-
-        Column({ space: 4 }) {
+        Row({ space: 8 }) {
           Text('\u4f4d\u7f6e')
             .fontSize(this.largeFontEnabled ? 15 : 12)
             .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#6b7280')
-          Row({ space: 6 }) {
-            Text('\ud83d\udccd')
-              .fontSize(this.largeFontEnabled ? 16 : 13)
-            Text(this.detail.request.location)
-              .fontSize(this.largeFontEnabled ? 18 : 15)
-              .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
-              .layoutWeight(1)
-          }
-          .width('100%')
-          .alignItems(VerticalAlign.Top)
+          Text(this.detail.request.location)
+            .fontSize(this.largeFontEnabled ? 16 : 13)
+            .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
+            .layoutWeight(1)
         }
-        .alignItems(HorizontalAlign.Start)
-        .width('100%')
       }
       .width('100%')
       .padding(16)
@@ -639,7 +621,6 @@ struct RequestDetailPage {
         .width('100%')
         .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
-        .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.pageBg : '#f5f5f5')
       } else if (this.isLoading) {
         Column({ space: 16 }) {
           LoadingProgress()
@@ -652,7 +633,6 @@ struct RequestDetailPage {
         .width('100%')
         .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
-        .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.pageBg : '#f5f5f5')
       } else if (this.loadError) {
         Column({ space: 20 }) {
           Text(this.loadError)
@@ -665,7 +645,6 @@ struct RequestDetailPage {
         .width('100%')
         .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
-        .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.pageBg : '#f5f5f5')
       } else if (this.detail) {
         Scroll() {
           Column({ space: 12 }) {
@@ -673,13 +652,9 @@ struct RequestDetailPage {
               Row() {
                 this.StatusBadge()
                 Blank()
-                Row({ space: 6 }) {
-                  Text('\u23f0')
-                    .fontSize(this.largeFontEnabled ? 17 : 14)
-                  Text(this.detail.headerTimeDisplay)
-                    .fontSize(this.largeFontEnabled ? 16 : 13)
-                    .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#6b7280')
-                }
+                Text(this.detail.headerTimeDisplay)
+                  .fontSize(this.largeFontEnabled ? 16 : 13)
+                  .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#6b7280')
               }
               .width('100%')
               .alignItems(VerticalAlign.Center)
@@ -699,17 +674,13 @@ struct RequestDetailPage {
             .border(this.highContrastEnabled ? ElderHighContrastTheme.cardBorder() : undefined)
 
             this.VolunteerCard()
-
             this.DetailInfoCard()
             this.ProgressCard()
           }
           .width('100%')
-          .justifyContent(FlexAlign.Start)
-          .alignItems(HorizontalAlign.Start)
           .padding({ left: 12, right: 12, top: 0, bottom: 20 })
         }
         .layoutWeight(1)
-        .align(Alignment.TopStart)
         .scrollBar(BarState.Auto)
         .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.pageBg : '#f5f5f5')
       }

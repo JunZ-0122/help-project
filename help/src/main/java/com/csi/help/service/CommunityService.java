@@ -194,15 +194,12 @@ public class CommunityService {
         long completedRequests = helpRequestMapper.count("completed");
 
         int todayRequests = 0;
-        int todayCompleted = 0;
         for (HelpRequest request : allRequests) {
             if (request.getCreatedAt() != null && request.getCreatedAt().toLocalDate().equals(LocalDate.now())) {
                 todayRequests++;
             }
-            if (request.getCompletedAt() != null && request.getCompletedAt().toLocalDate().equals(LocalDate.now())) {
-                todayCompleted++;
-            }
         }
+        long todayCompleted = volunteerOrderMapper.countCompletedOnLocalDate(LocalDate.now());
 
         double satisfactionRateLegacy = totalRequests == 0 ? 0.0 : (completedRequests * 100.0 / totalRequests);
 
@@ -216,8 +213,8 @@ public class CommunityService {
         stats.put("busyVolunteers", busyVolunteers);
         stats.put("todayRequests", todayRequests);
         stats.put("todayCompleted", todayCompleted);
-        stats.put("averageResponseTime", 0);
-        stats.put("averageCompletionTime", 0);
+        stats.put("averageResponseTime", roundMetric(volunteerOrderMapper.avgResponseMinutes()));
+        stats.put("averageCompletionTime", roundMetric(volunteerOrderMapper.avgCompletionMinutes()));
         stats.put("satisfactionRate", satisfactionRateLegacy);
 
         LocalDate today = LocalDate.now();
@@ -257,6 +254,13 @@ public class CommunityService {
             return current > 0 ? 100 : 0;
         }
         return (int) Math.round((current - previous) * 100.0 / previous);
+    }
+
+    private static double roundMetric(Double value) {
+        if (value == null || value.isNaN() || value.isInfinite()) {
+            return 0.0;
+        }
+        return Math.round(value * 10.0) / 10.0;
     }
 
     private static int ratingToPercent(Double avgRating) {

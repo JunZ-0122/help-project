@@ -84,6 +84,10 @@ public interface VolunteerOrderMapper {
      */
     long countCompletedOnLocalDate(@Param("day") LocalDate day);
 
+    Double avgResponseMinutes();
+
+    Double avgCompletionMinutes();
+
     /**
      * 区间内各志愿者完成单数，按单数降序
      */

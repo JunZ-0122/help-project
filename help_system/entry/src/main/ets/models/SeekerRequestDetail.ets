@@ -26,6 +26,7 @@ export interface SeekerBanner {
 
 export interface SeekerRequestDetail {
   request: HelpRequest;
+  orderId?: string;
   badgeLabel: string;
   badgeTone: string;
   headerTimeDisplay: string;

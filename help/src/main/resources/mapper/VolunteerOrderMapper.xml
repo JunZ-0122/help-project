@@ -145,6 +145,27 @@
           AND DATE(completed_at) = #{day}
     </select>
 
+    <select id="avgResponseMinutes" resultType="java.lang.Double">
+        SELECT AVG(TIMESTAMPDIFF(MINUTE, hr.created_at, vo.accepted_at))
+        FROM volunteer_orders vo
+        INNER JOIN help_requests hr ON hr.id = vo.request_id
+        WHERE vo.accepted_at IS NOT NULL
+          AND hr.created_at IS NOT NULL
+    </select>
+
+    <select id="avgCompletionMinutes" resultType="java.lang.Double">
+        SELECT AVG(
+            CASE
+                WHEN actual_duration IS NOT NULL AND actual_duration &gt; 0 THEN actual_duration
+                WHEN accepted_at IS NOT NULL AND completed_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, accepted_at, completed_at)
+                ELSE NULL
+            END
+        )
+        FROM volunteer_orders
+        WHERE status = 'completed'
+          AND completed_at IS NOT NULL
+    </select>
+
     <select id="volunteerCompletedCountsBetween" resultType="java.util.HashMap">
         SELECT volunteer_id AS volunteerId,
                volunteer_name AS volunteerName,
