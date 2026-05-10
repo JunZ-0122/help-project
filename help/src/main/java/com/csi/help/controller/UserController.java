@@ -5,11 +5,14 @@ import com.csi.help.entity.User;
 import com.csi.help.entity.UserLocation;
 import com.csi.help.service.UserLocationService;
 import com.csi.help.service.UserService;
+import com.csi.help.service.VolunteerSkillService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -24,11 +27,14 @@ public class UserController {
     @Autowired
     private UserLocationService userLocationService;
 
+    @Autowired
+    private VolunteerSkillService volunteerSkillService;
+
     @GetMapping("/{id}")
     public Result<User> getUser(@PathVariable String id) {
         User user = userService.getById(id);
         if (user == null) {
-            return Result.error("\u7528\u6237\u4e0d\u5b58\u5728");
+            return Result.error("用户不存在");
         }
         user.setPassword(null);
         return Result.success(user);
@@ -38,7 +44,7 @@ public class UserController {
     public Result<User> getCurrentUser(@RequestAttribute("userId") String userId) {
         User user = userService.getById(userId);
         if (user == null) {
-            return Result.error("\u7528\u6237\u4e0d\u5b58\u5728");
+            return Result.error("用户不存在");
         }
         user.setPassword(null);
         return Result.success(user);
@@ -54,7 +60,7 @@ public class UserController {
 
         User updatedUser = userService.getById(userId);
         if (updatedUser == null) {
-            return Result.error("\u7528\u6237\u4e0d\u5b58\u5728");
+            return Result.error("用户不存在");
         }
 
         updatedUser.setPassword(null);
@@ -75,16 +81,16 @@ public class UserController {
         String role = params.get("role");
 
         if (role == null || (!role.equals("help-seeker") && !role.equals("volunteer") && !role.equals("community"))) {
-            return Result.error("\u65e0\u6548\u7684\u89d2\u8272\u7c7b\u578b");
+            return Result.error("无效的角色类型");
         }
 
         User user = userService.getById(userId);
         if (user == null) {
-            return Result.error("\u7528\u6237\u4e0d\u5b58\u5728");
+            return Result.error("用户不存在");
         }
 
         if (user.getRole() != null && !user.getRole().isEmpty() && !"default".equals(user.getRole())) {
-            return Result.error("\u7528\u6237\u5df2\u6709\u89d2\u8272\uff0c\u4e0d\u5141\u8bb8\u4fee\u6539");
+            return Result.error("用户已有角色，不允许修改");
         }
 
         userService.updateRole(userId, role);
@@ -100,16 +106,16 @@ public class UserController {
         String newRole = params.get("role");
 
         if (newRole == null || (!newRole.equals("help-seeker") && !newRole.equals("volunteer") && !newRole.equals("community"))) {
-            return Result.error("\u65e0\u6548\u7684\u89d2\u8272\u7c7b\u578b");
+            return Result.error("无效的角色类型");
         }
 
         User user = userService.getById(userId);
         if (user == null) {
-            return Result.error("\u7528\u6237\u4e0d\u5b58\u5728");
+            return Result.error("用户不存在");
         }
 
         if (newRole.equals(user.getRole())) {
-            return Result.error("\u5f53\u524d\u5df2\u662f\u8be5\u89d2\u8272\uff0c\u65e0\u9700\u5207\u6362");
+            return Result.error("当前已是该角色，无需切换");
         }
 
         userService.updateRole(userId, newRole);
@@ -119,9 +125,6 @@ public class UserController {
         return Result.success(user);
     }
 
-    /**
-     * 上报当前用户位置（经纬度必填，address、source 可选）
-     */
     @PostMapping("/me/location")
     public Result<UserLocation> reportLocation(@RequestBody Map<String, Object> body,
                                                @RequestAttribute("userId") String userId) {
@@ -141,9 +144,6 @@ public class UserController {
         return Result.success(loc);
     }
 
-    /**
-     * 查询当前用户最近一次位置
-     */
     @GetMapping("/me/location")
     public Result<UserLocation> getMyLocation(@RequestAttribute("userId") String userId) {
         log.info("[User] 查询我的位置: userId={}", userId);
@@ -153,5 +153,29 @@ public class UserController {
             return Result.error("暂无位置信息");
         }
         return Result.success(loc);
+    }
+
+    @GetMapping("/me/volunteer-skills")
+    public Result<List<String>> getMyVolunteerSkills(@RequestAttribute("userId") String userId) {
+        return Result.success(volunteerSkillService.getSkills(userId));
+    }
+
+    @PutMapping("/me/volunteer-skills")
+    public Result<List<String>> updateMyVolunteerSkills(@RequestBody Map<String, Object> body,
+                                                        @RequestAttribute("userId") String userId) {
+        Object rawSkills = body.get("skills");
+        List<String> skillCodes = new ArrayList<>();
+        if (rawSkills instanceof List<?>) {
+            for (Object item : (List<?>) rawSkills) {
+                if (item != null) {
+                    skillCodes.add(item.toString());
+                }
+            }
+        }
+        try {
+            return Result.success(volunteerSkillService.replaceSkills(userId, skillCodes));
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
     }
 }

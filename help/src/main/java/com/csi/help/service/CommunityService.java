@@ -103,11 +103,12 @@ public class CommunityService {
 
         double refLat = 0.0, refLng = 0.0;
         boolean hasRef = false;
+        HelpRequest referenceRequest = null;
         if (requestId != null && !requestId.isBlank()) {
-            HelpRequest request = helpRequestMapper.findById(requestId);
-            if (request != null && request.getLatitude() != null && request.getLongitude() != null) {
-                refLat = request.getLatitude();
-                refLng = request.getLongitude();
+            referenceRequest = helpRequestMapper.findById(requestId);
+            if (referenceRequest != null && referenceRequest.getLatitude() != null && referenceRequest.getLongitude() != null) {
+                refLat = referenceRequest.getLatitude();
+                refLng = referenceRequest.getLongitude();
                 hasRef = true;
             }
         }
@@ -137,9 +138,11 @@ public class CommunityService {
             volunteerDto.setCompletedOrders(completedOrders);
             volunteerDto.setCurrentOrders(currentOrders);
             volunteerDto.setLocation(volunteer.getAddress());
+            List<String> skillCodes = resolveSkillCodesForVolunteer(volunteer.getId());
+            volunteerDto.setSkills(skillCodes);
 
+            UserLocation loc = userLocationService.getByUserId(volunteer.getId());
             if (hasRef) {
-                UserLocation loc = userLocationService.getByUserId(volunteer.getId());
                 if (loc != null && loc.getLatitude() != null && loc.getLongitude() != null) {
                     double km = AmapService.distanceKm(
                             loc.getLongitude(), loc.getLatitude(), refLng, refLat);
@@ -150,10 +153,25 @@ public class CommunityService {
             } else {
                 volunteerDto.setDistance(0.0);
             }
+
+            if (referenceRequest != null) {
+                int matchScore = computeDispatchMatchScore(
+                        referenceRequest,
+                        skillCodes,
+                        loc != null ? loc.getLatitude() : null,
+                        loc != null ? loc.getLongitude() : null,
+                        volunteer);
+                volunteerDto.setMatchScore(matchScore);
+                volunteerDto.setSkillMatched(skillMatches(skillCodes, referenceRequest.getType()));
+            }
             result.add(volunteerDto);
         }
 
-        if (hasRef) {
+        if (referenceRequest != null) {
+            result.sort(Comparator
+                    .comparing(CommunityVolunteerDto::getMatchScore, Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(CommunityVolunteerDto::getDistance, Comparator.nullsLast(Comparator.naturalOrder())));
+        } else if (hasRef) {
             result.sort(Comparator.comparing(
                     CommunityVolunteerDto::getDistance,
                     Comparator.nullsLast(Comparator.naturalOrder())));

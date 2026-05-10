@@ -40,7 +40,7 @@ help:
   seed-demo-if-empty: true
 
 amap:
-  web-service-key: ${AMAP_WEB_SERVICE_KEY:979048b553c25febcd9efb0549d9526c}
+  web-service-key: ${AMAP_WEB_SERVICE_KEY:19820ecb922e32f7f0174805d1166843}
   web-service-host: https://restapi.amap.com
 
 app:

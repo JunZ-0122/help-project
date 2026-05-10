@@ -9,4 +9,14 @@
         ORDER BY skill_code
     </select>
 
+    <delete id="deleteByUserId">
+        DELETE FROM volunteer_skills
+        WHERE user_id = #{userId}
+    </delete>
+
+    <insert id="insertSkill">
+        INSERT INTO volunteer_skills (user_id, skill_code)
+        VALUES (#{userId}, #{skillCode})
+    </insert>
+
 </mapper>

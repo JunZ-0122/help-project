@@ -15,6 +15,8 @@ public class CommunityVolunteerDto {
     private List<String> skills = new ArrayList<>();
     private String location;
     private Double distance;
+    private Integer matchScore;
+    private Boolean skillMatched;
 
     public String getId() {
         return id;
@@ -102,5 +104,21 @@ public class CommunityVolunteerDto {
 
     public void setDistance(Double distance) {
         this.distance = distance;
+    }
+
+    public Integer getMatchScore() {
+        return matchScore;
+    }
+
+    public void setMatchScore(Integer matchScore) {
+        this.matchScore = matchScore;
+    }
+
+    public Boolean getSkillMatched() {
+        return skillMatched;
+    }
+
+    public void setSkillMatched(Boolean skillMatched) {
+        this.skillMatched = skillMatched;
     }
 }

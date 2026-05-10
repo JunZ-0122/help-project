@@ -12,4 +12,8 @@ import java.util.List;
 public interface VolunteerSkillMapper {
 
     List<String> findSkillCodesByUserId(@Param("userId") String userId);
+
+    int deleteByUserId(@Param("userId") String userId);
+
+    int insertSkill(@Param("userId") String userId, @Param("skillCode") String skillCode);
 }
