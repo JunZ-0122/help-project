@@ -1,18 +1,12 @@
 import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { AuthService } from '../../services/AuthService';
-import type { LoginRequest, LoginResponse } from '../../models/Auth';
+import { extractVerificationCode } from '../../utils';
+import type { LoginRequest, LoginResponse, SendVerificationCodeResponse } from '../../models/Auth';
 
-/**
- * 手表专用登录页：分步输入，适配圆形屏幕
- * 步骤1：输入手机号
- * 步骤2：获取并输入验证码
- * 步骤3：登录中（过渡状态）
- */
 @Entry
 @Component
 struct WatchLoginPage {
-  // 当前步骤：1=手机号, 2=验证码
   @State step: number = 1;
   @State phone: string = '';
   @State code: string = '';
@@ -32,28 +26,33 @@ struct WatchLoginPage {
   }
 
   onLoginSuccess(): void {
-    if (!this.loginSuccessful || !this.loginUserData) return;
+    if (!this.loginSuccessful || !this.loginUserData) {
+      return;
+    }
     const role = this.loginUserData.user.role as string | undefined;
-
     promptAction.showToast({ message: '登录成功', duration: 1500 });
 
     if (role === 'help-seeker') {
-      router.replaceUrl({ url: 'pages/watch/WatchSeekerHomePage' }).catch((e: Error) => {});
+      router.replaceUrl({ url: 'pages/watch/WatchSeekerHomePage' }).catch(() => {});
     } else if (role === 'volunteer') {
-      router.replaceUrl({ url: 'pages/watch/WatchVolunteerHomePage' }).catch((e: Error) => {});
+      router.replaceUrl({ url: 'pages/watch/WatchVolunteerHomePage' }).catch(() => {});
     } else {
       router.replaceUrl({
         url: 'pages/watch/WatchAccountUnsupportedPage',
         params: { reason: role ? 'community' : 'no-role' }
-      }).catch((e: Error) => {});
+      }).catch(() => {});
     }
   }
 
   private appendDigit(digit: string): void {
     if (this.step === 1) {
-      if (this.phone.length < 11) this.phone += digit;
-    } else {
-      if (this.code.length < 6) this.code += digit;
+      if (this.phone.length < 11) {
+        this.phone += digit;
+      }
+      return;
+    }
+    if (this.code.length < 6) {
+      this.code += digit;
     }
   }
 
@@ -67,40 +66,34 @@ struct WatchLoginPage {
 
   private handleNext(): void {
     if (this.phone.length !== 11) {
-      promptAction.showToast({ message: '请输入11位手机号', duration: 2000 });
+      promptAction.showToast({ message: '请输入 11 位手机号', duration: 2000 });
       return;
     }
-    // 发送验证码
-    AuthService.sendVerificationCode({ phone: this.phone, type: 'login' }).then((ok: boolean) => {
-      if (ok) {
-        this.step = 2;
-        this.countdown = 60;
-        promptAction.showToast({ message: '验证码已发送（测试：123456）', duration: 3000 });
-        this.countdownTimer = setInterval(() => {
-          this.countdown--;
-          if (this.countdown <= 0) {
-            clearInterval(this.countdownTimer);
-            this.countdownTimer = -1;
-            this.countdown = 0;
-          }
-        }, 1000);
-      } else {
-        promptAction.showToast({ message: '发送失败，请重试', duration: 2000 });
-      }
-    }).catch((e: Error) => {
-      console.error('[WatchLoginPage] sendVerificationCode failed:', e);
-      const message = e.message || '发送失败';
+    AuthService.sendVerificationCode({ phone: this.phone, type: 'login' }).then((response: SendVerificationCodeResponse) => {
+      this.step = 2;
+      this.countdown = response.cooldownSeconds > 0 ? response.cooldownSeconds : 60;
+      const code = extractVerificationCode(response.mockMessage, response.debugCode);
       promptAction.showToast({
-        message: message.includes('CURLcode result 28') || message.includes('timeout')
-          ? '模拟器访问不到后端，请检查 API_BASE_URL / 网络映射'
-          : message,
-        duration: 2000
+        message: code ? `模拟短信验证码：${code}` : '验证码已发送',
+        duration: 3000
       });
+      this.countdownTimer = setInterval(() => {
+        this.countdown--;
+        if (this.countdown <= 0) {
+          clearInterval(this.countdownTimer);
+          this.countdownTimer = -1;
+          this.countdown = 0;
+        }
+      }, 1000);
+    }).catch((e: Error) => {
+      promptAction.showToast({ message: e.message || '发送失败', duration: 2000 });
     });
   }
 
   private handleResend(): void {
-    if (this.countdown > 0) return;
+    if (this.countdown > 0) {
+      return;
+    }
     this.handleNext();
   }
 
@@ -109,12 +102,12 @@ struct WatchLoginPage {
   }
 
   private getStepHint(): string {
-    return this.step === 1 ? '请先输入 11 位手机号' : '验证码已发送后输入 4 位以上即可登录';
+    return this.step === 1 ? '请先输入 11 位手机号' : '验证码发送后请输入 6 位数字';
   }
 
   private handleLogin(): void {
-    if (this.code.length < 4) {
-      promptAction.showToast({ message: '请输入验证码', duration: 2000 });
+    if (this.code.length !== 6) {
+      promptAction.showToast({ message: '请输入 6 位验证码', duration: 2000 });
       return;
     }
     this.isLoading = true;
@@ -134,14 +127,13 @@ struct WatchLoginPage {
     });
   }
 
-  // 数字键盘（3列3行，极致压缩）
   @Builder
   buildKeypad() {
     Column({ space: 2 }) {
       ForEach(['1,2,3', '4,5,6', '7,8,9'], (row: string) => {
         Row({ space: 2 }) {
-          ForEach(row.split(','), (d: string) => {
-            Button(d)
+          ForEach(row.split(','), (digit: string) => {
+            Button(digit)
               .layoutWeight(1)
               .height(22)
               .fontSize(12)
@@ -151,7 +143,9 @@ struct WatchLoginPage {
               .borderRadius(5)
               .border({ width: 1, color: '#e2e8f0' })
               .shadow({ radius: 2, color: '#00000008', offsetY: 1 })
-              .onClick(() => { this.appendDigit(d); })
+              .onClick(() => {
+                this.appendDigit(digit);
+              })
           })
         }
       })
@@ -159,7 +153,6 @@ struct WatchLoginPage {
     .width('100%')
   }
 
-  // 步骤1：输入手机号
   @Builder
   buildStep1() {
     Column({ space: 6 }) {
@@ -187,7 +180,6 @@ struct WatchLoginPage {
           .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
           .borderRadius(5)
           .border({ width: 1.5, color: this.highContrastEnabled ? '#000000' : '#3b82f6' })
-          .shadow({ radius: 2, color: '#00000010', offsetY: 1 })
         Button('删除')
           .width(34)
           .height(24)
@@ -196,7 +188,9 @@ struct WatchLoginPage {
           .backgroundColor(this.highContrastEnabled ? '#000000' : '#f1f5f9')
           .fontColor(this.highContrastEnabled ? '#ffff00' : '#64748b')
           .borderRadius(5)
-          .onClick(() => { this.deleteOne(); })
+          .onClick(() => {
+            this.deleteOne();
+          })
       }
       .width('100%')
 
@@ -212,8 +206,10 @@ struct WatchLoginPage {
           .fontColor(this.highContrastEnabled ? '#ffff00' : '#1e293b')
           .borderRadius(5)
           .border({ width: 1, color: '#e2e8f0' })
-          .shadow({ radius: 2, color: '#00000008', offsetY: 1 })
-          .onClick(() => { this.appendDigit('0'); })
+          .onClick(() => {
+            this.appendDigit('0');
+          })
+
         Button('下一步')
           .layoutWeight(2)
           .height(24)
@@ -225,8 +221,9 @@ struct WatchLoginPage {
           .fontColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
           .borderRadius(5)
           .enabled(this.phone.length === 11)
-          .shadow({ radius: 4, color: this.phone.length === 11 ? '#3b82f620' : '#00000000', offsetY: 2 })
-          .onClick(() => { this.handleNext(); })
+          .onClick(() => {
+            this.handleNext();
+          })
       }
       .width('100%')
     }
@@ -234,11 +231,9 @@ struct WatchLoginPage {
     .padding({ left: 12, right: 12, top: 8, bottom: 6 })
   }
 
-  // 步骤2：输入验证码
   @Builder
   buildStep2() {
     Column({ space: 6 }) {
-      // 标题区（压缩字体和间距）
       Column({ space: 2 }) {
         Text('验证码')
           .fontSize(this.largeFontEnabled ? 14 : 12)
@@ -251,7 +246,6 @@ struct WatchLoginPage {
       .width('100%')
       .alignItems(HorizontalAlign.Center)
 
-      // 验证码输入区：返回按钮 + 验证码显示框 + 删除键
       Row({ space: 3 }) {
         Button('返回')
           .width(30)
@@ -264,11 +258,6 @@ struct WatchLoginPage {
           .onClick(() => {
             this.step = 1;
             this.code = '';
-            if (this.countdownTimer !== -1) {
-              clearInterval(this.countdownTimer);
-              this.countdownTimer = -1;
-            }
-            this.countdown = 0;
           })
         Text(this.code.length > 0 ? this.code : '------')
           .fontSize(this.largeFontEnabled ? 14 : 12)
@@ -282,7 +271,6 @@ struct WatchLoginPage {
           .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
           .borderRadius(5)
           .border({ width: 1.5, color: this.highContrastEnabled ? '#000000' : '#3b82f6' })
-          .shadow({ radius: 2, color: '#00000010', offsetY: 1 })
         Button('删除')
           .width(34)
           .height(24)
@@ -291,14 +279,14 @@ struct WatchLoginPage {
           .backgroundColor(this.highContrastEnabled ? '#000000' : '#f1f5f9')
           .fontColor(this.highContrastEnabled ? '#ffff00' : '#64748b')
           .borderRadius(5)
-          .onClick(() => { this.deleteOne(); })
+          .onClick(() => {
+            this.deleteOne();
+          })
       }
       .width('100%')
 
-      // 键盘
       this.buildKeypad()
 
-      // 底部操作区：0、重发、登录
       Column({ space: 3 }) {
         Row({ space: 3 }) {
           Button('0')
@@ -310,8 +298,9 @@ struct WatchLoginPage {
             .fontColor(this.highContrastEnabled ? '#ffff00' : '#1e293b')
             .borderRadius(5)
             .border({ width: 1, color: '#e2e8f0' })
-            .shadow({ radius: 2, color: '#00000008', offsetY: 1 })
-            .onClick(() => { this.appendDigit('0'); })
+            .onClick(() => {
+              this.appendDigit('0');
+            })
           Button(this.countdown > 0 ? `${this.countdown}s` : '重发')
             .layoutWeight(1)
             .height(24)
@@ -320,21 +309,24 @@ struct WatchLoginPage {
             .fontColor(this.highContrastEnabled ? '#ffff00' : '#64748b')
             .borderRadius(5)
             .enabled(this.countdown === 0)
-            .onClick(() => { this.handleResend(); })
+            .onClick(() => {
+              this.handleResend();
+            })
         }
         Button(this.isLoading ? '登录中...' : '登录')
           .width('100%')
           .height(28)
           .fontSize(12)
           .fontWeight(FontWeight.Medium)
-          .backgroundColor(this.code.length >= 4 && !this.isLoading
+          .backgroundColor(this.code.length === 6 && !this.isLoading
             ? (this.highContrastEnabled ? '#000000' : '#3b82f6')
             : '#cbd5e1')
           .fontColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
           .borderRadius(5)
-          .enabled(this.code.length >= 4 && !this.isLoading)
-          .shadow({ radius: 4, color: this.code.length >= 4 ? '#3b82f620' : '#00000000', offsetY: 2 })
-          .onClick(() => { this.handleLogin(); })
+          .enabled(this.code.length === 6 && !this.isLoading)
+          .onClick(() => {
+            this.handleLogin();
+          })
       }
       .width('100%')
     }
@@ -344,13 +336,11 @@ struct WatchLoginPage {
 
   build() {
     Stack() {
-      // 背景
       Circle()
         .width('100%')
         .height('100%')
         .fill(this.highContrastEnabled ? '#ffff00' : '#ffffff')
 
-      // 内容区（圆形内切正方形，约70%宽度）
       Scroll() {
         if (this.step === 1) {
           this.buildStep1()

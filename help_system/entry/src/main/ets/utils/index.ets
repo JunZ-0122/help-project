@@ -1,6 +1,7 @@
 /**
- * 工具类统一导出
+ * Unified utility exports.
  */
 
 export { StorageUtil } from './StorageUtil';
 export { DateUtil } from './DateUtil';
+export { extractVerificationCode, shouldShowMockMessage } from './VerificationCodeDebugUtil';

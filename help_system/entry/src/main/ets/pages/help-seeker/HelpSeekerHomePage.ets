@@ -116,7 +116,7 @@ struct HelpSeekerHomePage {
         router.pushUrl({ url: 'pages/help-seeker/EmergencyRequestPage' }).catch((err: Error) => {
           console.error('navigation failed:', err);
         });
-        promptAction.showToast({ message: '\u5df2\u8fdb\u5165\u7d27\u6025\u6c42\u52a9', duration: 1500 });
+        promptAction.showToast({ message: '已进入紧急求助', duration: 1500 });
         setTimeout(() => {
           this.emergencyPressProgress = 0;
         }, 400);
@@ -156,9 +156,9 @@ struct HelpSeekerHomePage {
         }
         this.locationDisplay = user.address && user.address.length > 0
           ? user.address
-          : '\u672a\u8bbe\u7f6e\u5730\u5740\uff0c\u53ef\u5728\u4e2a\u4eba\u4e2d\u5fc3\u8865\u5145';
+          : '未设置地址，可在个人中心补充';
       } else {
-        this.locationDisplay = '\u672a\u767b\u5f55\u6216\u6682\u65e0\u5730\u5740';
+        this.locationDisplay = '未登录或暂无地址';
       }
 
       try {
@@ -224,17 +224,17 @@ struct HelpSeekerHomePage {
   private getRequestTypeLabel(type: string): string {
     switch (type) {
       case 'medical':
-        return '\u5c31\u533b\u6c42\u52a9';
+        return '就医求助';
       case 'shopping':
-        return '\u751f\u6d3b\u5e2e\u6276';
+        return '生活帮扶';
       case 'repair':
-        return '\u7ef4\u4fee\u5e2e\u52a9';
+        return '维修帮助';
       case 'companion':
-        return '\u51fa\u884c\u534f\u52a9';
+        return '出行协助';
       case 'emergency':
-        return '\u7d27\u6025\u6c42\u52a9';
+        return '紧急求助';
       default:
-        return '\u5176\u4ed6\u5e2e\u52a9';
+        return '其他帮助';
     }
   }
 
@@ -340,16 +340,16 @@ struct HelpSeekerHomePage {
         .borderRadius(200)
         .justifyContent(FlexAlign.Center)
 
-        Text('\u4e00\u952e\u7d27\u6025\u6c42\u52a9')
+        Text('一键紧急求助')
           .fontSize(this.largeFontEnabled ? 22 : 18)
           .fontColor('#ffffff')
           .fontWeight(FontWeight.Bold)
 
-        Text('\u957f\u6309 3 \u79d2\u89e6\u53d1')
+        Text('长按 3 秒触发')
           .fontSize(this.largeFontEnabled ? 16 : 13)
           .fontColor('#fecaca')
 
-        Text('\u7ee7\u7eed\u6309\u4f4f...')
+        Text('继续按住...')
           .fontSize(this.largeFontEnabled ? 14 : 12)
           .fontColor('#fde68a')
           .visibility(this.emergencyPressProgress > 0 && this.emergencyPressProgress < 100
@@ -503,16 +503,16 @@ struct HelpSeekerHomePage {
   HomeTabContent() {
     Column() {
       Column({ space: 10 }) {
-        Text('\u60a8\u597d\uff0c' + this.userName)
+        Text('您好，' + this.userName)
           .fontSize(this.largeFontEnabled ? 26 : 22)
           .fontWeight(FontWeight.Bold)
           .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#ffffff')
           .width('100%')
 
         Row({ space: 8 }) {
-          Text('\uD83D\uDCCD')
+          Text('📍')
             .fontSize(this.largeFontEnabled ? 17 : 14)
-          Text('\u5f53\u524d\u4f4d\u7f6e\uff1a' + this.locationDisplay)
+          Text('当前位置：' + this.locationDisplay)
             .fontSize(this.largeFontEnabled ? 16 : 13)
             .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#e0e7ff')
             .layoutWeight(1)
@@ -539,7 +539,7 @@ struct HelpSeekerHomePage {
           .margin({ top: -6 })
 
           Column({ space: 14 }) {
-            Text('\u5e38\u7528\u6c42\u52a9\u7c7b\u578b')
+            Text('常用求助类型')
               .fontSize(this.largeFontEnabled ? 20 : 16)
               .fontWeight(FontWeight.Medium)
               .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#1a1a1a')
@@ -563,14 +563,14 @@ struct HelpSeekerHomePage {
 
           Column({ space: 16 }) {
             Row() {
-              Text('\u6700\u8fd1\u6c42\u52a9')
+              Text('最近求助')
                 .fontSize(this.largeFontEnabled ? 20 : 16)
                 .fontWeight(FontWeight.Medium)
                 .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#1a1a1a')
 
               Blank()
 
-              Button('\u67e5\u770b\u5168\u90e8')
+              Button('查看全部')
                 .fontSize(this.largeFontEnabled ? 16 : 13)
                 .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.accentBlue : '#3b82f6')
                 .backgroundColor(Color.Transparent)
@@ -582,15 +582,15 @@ struct HelpSeekerHomePage {
 
             Column({ space: 12 }) {
               if (this.isLoading) {
-                Text('\u52a0\u8f7d\u4e2d...')
+                Text('加载中...')
                   .fontSize(this.largeFontEnabled ? 16 : 13)
                   .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textSecondary : '#6b7280')
               } else if (this.recentRequests.length === 0) {
                 Column({ space: 8 }) {
-                  Text('\u2630')
+                  Text('☰')
                     .fontSize(36)
                     .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#9ca3af')
-                  Text('\u6682\u65e0\u6c42\u52a9\u8bb0\u5f55')
+                  Text('暂无求助记录')
                     .fontSize(this.largeFontEnabled ? 16 : 13)
                     .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textSecondary : '#6b7280')
                 }
@@ -729,7 +729,7 @@ struct HelpSeekerHomePage {
         .width('100%')
         .height('100%')
       }
-      .tabBar(this.TabBuilder(2, '\u4e2a\u4eba\u4e2d\u5fc3', '👤'))
+      .tabBar(this.TabBuilder(2, '个人中心', '👤'))
     }
     .barPosition(BarPosition.End)
     .barMode(BarMode.Fixed)

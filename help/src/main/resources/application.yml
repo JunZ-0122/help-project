@@ -7,8 +7,11 @@ spring:
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
-  
-  # HTTP 编码配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
   http:
     encoding:
       charset: UTF-8
@@ -21,7 +24,6 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
-# 服务器配置
 server:
   address: 0.0.0.0
   port: 8080
@@ -34,12 +36,19 @@ server:
 jwt:
   secret: CSIHelpJwtSecretKeyForPreviewAndDev1234567890
 
-# 无待接单数据时自动插入一条演示求助（志愿者端列表/附近可用）。生产部署请设为 false
 help:
   seed-demo-if-empty: true
 
-# 高德 Web 服务（地理编码/逆地理/距离）。必须使用「Web服务」类型 Key（当前为 Web端 Key 会报 USERKEY_PLAT_NOMATCH）
-# 操作：控制台 help 应用 → 添加Key → 服务平台选「Web服务」→ 复制新 Key 替换下面值。详见 help/docs/高德Key-添加Web服务Key步骤.md
 amap:
   web-service-key: ${AMAP_WEB_SERVICE_KEY:979048b553c25febcd9efb0549d9526c}
   web-service-host: https://restapi.amap.com
+
+app:
+  sms:
+    mock-mode:
+      enabled: ${SMS_MOCK_MODE_ENABLED:true}
+      return-code: ${SMS_MOCK_RETURN_CODE:true}
+    code:
+      ttl-seconds: ${SMS_CODE_TTL_SECONDS:300}
+      cooldown-seconds: ${SMS_CODE_COOLDOWN_SECONDS:60}
+      max-failures: ${SMS_CODE_MAX_FAILURES:5}

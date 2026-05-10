@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(32) PRIMARY KEY COMMENT '用户ID',
     name VARCHAR(50) NOT NULL COMMENT '姓名',
     phone VARCHAR(20) NOT NULL UNIQUE COMMENT '手机号',
-    password VARCHAR(64) NOT NULL COMMENT '密码（MD5加密）',
+    password VARCHAR(64) NOT NULL COMMENT '密码（MD5 + Salt）',
+    salt VARCHAR(64) COMMENT '随机盐值',
     avatar VARCHAR(255) COMMENT '头像URL',
     role VARCHAR(20) NOT NULL COMMENT '角色：help-seeker, volunteer, community',
     status VARCHAR(20) DEFAULT 'offline' COMMENT '状态：online, offline, busy',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    
-    -- 扩展字段
+
     age INT COMMENT '年龄',
     gender VARCHAR(10) COMMENT '性别：male, female, other',
     address VARCHAR(255) COMMENT '地址',
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
     certifications TEXT COMMENT '志愿者资质（JSON数组）',
     volunteer_hours INT DEFAULT 0 COMMENT '志愿服务时长',
     rating DECIMAL(3,2) COMMENT '评分',
-    
+
     INDEX idx_phone (phone),
     INDEX idx_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS help_requests (
     completed_at DATETIME COMMENT '完成时间',
     rating INT COMMENT '评分',
     feedback TEXT COMMENT '反馈',
-    
+
     INDEX idx_user_id (user_id),
     INDEX idx_status (status),
     INDEX idx_type (type),
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS volunteer_orders (
     images TEXT COMMENT '图片URL（JSON数组）',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    
+
     INDEX idx_volunteer_id (volunteer_id),
     INDEX idx_request_id (request_id),
     INDEX idx_status (status),
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     longitude DECIMAL(10,7) COMMENT '位置经度',
     is_read BOOLEAN DEFAULT FALSE COMMENT '是否已读',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    
+
     INDEX idx_request_id (request_id),
     INDEX idx_sender_id (sender_id),
     INDEX idx_created_at (created_at),
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     reviewer_name VARCHAR(50) NOT NULL COMMENT '评价者姓名',
     reviewee_id VARCHAR(32) NOT NULL COMMENT '被评价者ID',
     reviewee_name VARCHAR(50) NOT NULL COMMENT '被评价者姓名',
-    rating INT NOT NULL COMMENT '评分（1-5）',
+    rating INT NOT NULL COMMENT '评分：1-5',
     tags TEXT COMMENT '标签（JSON数组）',
     content TEXT COMMENT '评价内容',
     images TEXT COMMENT '图片URL（JSON数组）',
@@ -137,16 +137,16 @@ CREATE TABLE IF NOT EXISTS reviews (
     reply_content TEXT COMMENT '回复内容',
     reply_time DATETIME COMMENT '回复时间',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    
+
     UNIQUE KEY uk_order_reviewer (order_id, reviewer_id),
     INDEX idx_order_id (order_id),
     INDEX idx_reviewee_id (reviewee_id),
     FOREIGN KEY (order_id) REFERENCES volunteer_orders(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价表';
 
--- 志愿者技能标签（社区快速派单匹配）
+-- 志愿者技能标签
 CREATE TABLE IF NOT EXISTS volunteer_skills (
-    user_id VARCHAR(32) NOT NULL COMMENT '志愿者用户 ID',
+    user_id VARCHAR(32) NOT NULL COMMENT '志愿者用户ID',
     skill_code VARCHAR(32) NOT NULL COMMENT 'medical,companion,shopping,repair,emergency,other',
     PRIMARY KEY (user_id, skill_code),
     CONSTRAINT fk_volunteer_skills_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

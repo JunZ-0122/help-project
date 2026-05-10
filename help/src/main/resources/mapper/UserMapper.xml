@@ -2,12 +2,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.csi.help.mapper.UserMapper">
-    
+
     <resultMap id="UserResultMap" type="com.csi.help.entity.User">
         <id property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="phone" column="phone"/>
         <result property="password" column="password"/>
+        <result property="salt" column="salt"/>
         <result property="avatar" column="avatar"/>
         <result property="role" column="role"/>
         <result property="status" column="status"/>
@@ -23,11 +24,11 @@
         <result property="volunteerHours" column="volunteer_hours"/>
         <result property="rating" column="rating"/>
     </resultMap>
-    
+
     <select id="findByPhone" resultMap="UserResultMap">
         SELECT * FROM users WHERE phone = #{phone}
     </select>
-    
+
     <select id="findById" resultMap="UserResultMap">
         SELECT * FROM users WHERE id = #{id}
     </select>
@@ -35,16 +36,18 @@
     <select id="findByRole" resultMap="UserResultMap">
         SELECT * FROM users WHERE role = #{role}
     </select>
-    
+
     <insert id="insert">
-        INSERT INTO users (id, name, phone, password, role, status, created_at)
-        VALUES (#{id}, #{name}, #{phone}, #{password}, #{role}, #{status}, NOW())
+        INSERT INTO users (id, name, phone, password, salt, role, status, created_at)
+        VALUES (#{id}, #{name}, #{phone}, #{password}, #{salt}, #{role}, #{status}, NOW())
     </insert>
-    
+
     <update id="update">
         UPDATE users
         <set>
             <if test="name != null">name = #{name},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="salt != null">salt = #{salt},</if>
             <if test="avatar != null">avatar = #{avatar},</if>
             <if test="role != null">role = #{role},</if>
             <if test="age != null">age = #{age},</if>
@@ -59,10 +62,18 @@
         </set>
         WHERE id = #{id}
     </update>
-    
+
+    <update id="updatePasswordAndSalt">
+        UPDATE users
+        SET password = #{password},
+            salt = #{salt},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
     <update id="updateStatus">
         UPDATE users SET status = #{status}, updated_at = NOW()
         WHERE id = #{id}
     </update>
-    
+
 </mapper>

@@ -4,12 +4,16 @@ import com.csi.help.common.Result;
 import com.csi.help.dto.LoginRequest;
 import com.csi.help.dto.LoginResponse;
 import com.csi.help.dto.RegisterRequest;
-import com.csi.help.entity.User;
+import com.csi.help.dto.SendCodeResponse;
 import com.csi.help.service.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -28,54 +32,43 @@ public class AuthController {
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
-    
-    /**
-     * 用户登录
-     */
+
     @PostMapping("/login")
     public Result<LoginResponse> login(@Validated @RequestBody LoginRequest request) {
-        log.info("[Auth] 登录请求: phone={}", request != null ? request.getPhone() : "");
+        log.info("[Auth] login request: phone={}", request != null ? request.getPhone() : "");
         try {
             LoginResponse response = authService.login(request);
-            log.info("[Auth] 登录成功: userId={}", response != null && response.getUser() != null ? response.getUser().getId() : "");
+            log.info("[Auth] login success: userId={}",
+                    response != null && response.getUser() != null ? response.getUser().getId() : "");
             return Result.success(response);
         } catch (Exception e) {
-            log.warn("[Auth] 登录失败: {}", e.getMessage());
+            log.warn("[Auth] login failed: {}", e.getMessage());
             return Result.error(e.getMessage());
         }
     }
-    
-    /**
-     * 用户注册
-     */
+
     @PostMapping("/register")
-    public Result<User> register(@Validated @RequestBody RegisterRequest request) {
+    public Result<LoginResponse> register(@Validated @RequestBody RegisterRequest request) {
         try {
-            User user = authService.register(request);
-            return Result.success(user);
+            LoginResponse response = authService.register(request);
+            return Result.success(response);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
     }
-    
-    /**
-     * 发送验证码
-     */
+
     @PostMapping("/send-code")
-    public Result<Void> sendCode(@RequestBody Map<String, String> request) {
+    public Result<SendCodeResponse> sendCode(@RequestBody Map<String, String> request) {
         try {
             String phone = request.get("phone");
             String type = request.get("type");
-            authService.sendCode(phone, type);
-            return Result.success();
+            SendCodeResponse response = authService.sendCode(phone, type);
+            return Result.success(response);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
     }
-    
-    /**
-     * 刷新 Token
-     */
+
     @PostMapping("/refresh-token")
     public Result<LoginResponse> refreshToken(@RequestBody Map<String, String> request) {
         try {
@@ -86,13 +79,9 @@ public class AuthController {
             return Result.error(401, e.getMessage());
         }
     }
-    
-    /**
-     * 退出登录
-     */
+
     @PostMapping("/logout")
     public Result<Void> logout() {
-        // TODO: 将 Token 加入黑名单
         return Result.success();
     }
 }

@@ -1,10 +1,7 @@
 /**
- * 认证相关实体
+ * Auth-related models.
  */
 
-/**
- * 登录请求
- */
 export interface LoginRequest {
   phone: string;
   password: string;
@@ -12,9 +9,6 @@ export interface LoginRequest {
   loginType: 'password' | 'sms';
 }
 
-/**
- * 登录响应
- */
 export interface LoginResponse {
   token: string;
   refreshToken: string;
@@ -22,21 +16,15 @@ export interface LoginResponse {
   user: UserInfo;
 }
 
-/**
- * 用户信息
- */
 export interface UserInfo {
   id: string;
   name: string;
   phone: string;
   avatar?: string;
   role: 'default' | 'help-seeker' | 'volunteer' | 'community';
-  status: 'active' | 'inactive' | 'banned';
+  status: 'active' | 'inactive' | 'banned' | 'online' | 'offline' | 'busy';
 }
 
-/**
- * 注册请求
- */
 export interface RegisterRequest {
   phone: string;
   password: string;
@@ -45,26 +33,25 @@ export interface RegisterRequest {
   role: 'default' | 'help-seeker' | 'volunteer' | 'community';
 }
 
-/**
- * 验证码请求
- */
 export interface VerificationCodeRequest {
   phone: string;
   type: 'login' | 'register' | 'reset-password';
 }
 
-/**
- * 密码重置请求
- */
+export interface SendVerificationCodeResponse {
+  cooldownSeconds: number;
+  expiresInSeconds: number;
+  reused: boolean;
+  mockMessage?: string;
+  debugCode?: string;
+}
+
 export interface ResetPasswordRequest {
   phone: string;
   verificationCode: string;
   newPassword: string;
 }
 
-/**
- * Token 刷新请求
- */
 export interface RefreshTokenRequest {
   refreshToken: string;
 }

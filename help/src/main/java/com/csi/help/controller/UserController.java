@@ -83,7 +83,7 @@ public class UserController {
             return Result.error("\u7528\u6237\u4e0d\u5b58\u5728");
         }
 
-        if (user.getRole() != null && !user.getRole().isEmpty()) {
+        if (user.getRole() != null && !user.getRole().isEmpty() && !"default".equals(user.getRole())) {
             return Result.error("\u7528\u6237\u5df2\u6709\u89d2\u8272\uff0c\u4e0d\u5141\u8bb8\u4fee\u6539");
         }
 

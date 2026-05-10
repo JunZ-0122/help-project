@@ -10,6 +10,7 @@ public class User {
     private String name;
     private String phone;
     private String password;
+    private String salt;
     private String avatar;
     private String role;
     private String status;
@@ -55,6 +56,14 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getSalt() {
+        return salt;
+    }
+
+    public void setSalt(String salt) {
+        this.salt = salt;
     }
 
     public String getAvatar() {
