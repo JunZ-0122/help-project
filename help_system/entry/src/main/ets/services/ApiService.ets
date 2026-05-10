@@ -659,6 +659,10 @@ interface UpdateRoleData {
   role: string;
 }
 
+interface UpdateVolunteerSkillsBody {
+  skills: string[];
+}
+
 export class UserApi {
   static async getCurrentProfile(): Promise<UserProfile> {
     const response = await HttpClient.get<UserProfile>('/users/me');
@@ -709,6 +713,17 @@ export class UserApi {
   static async getMyLocation(): Promise<UserLocationResponse> {
     const response = await HttpClient.get<UserLocationResponse>('/users/me/location');
     return requireData(response, 'get my location failed');
+  }
+
+  static async getMyVolunteerSkills(): Promise<string[]> {
+    const response = await HttpClient.get<string[]>('/users/me/volunteer-skills');
+    return requireData(response, 'get volunteer skills failed');
+  }
+
+  static async updateMyVolunteerSkills(skills: string[]): Promise<string[]> {
+    const body: UpdateVolunteerSkillsBody = { skills: skills };
+    const response = await HttpClient.put<string[]>('/users/me/volunteer-skills', body);
+    return requireData(response, 'update volunteer skills failed');
   }
 
   static async login(phone: string, password: string): Promise<LoginResult> {

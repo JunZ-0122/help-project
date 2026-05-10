@@ -6,12 +6,26 @@ import { UserApi } from '../../services/ApiService';
 import { StorageUtil } from '../../utils/StorageUtil';
 import type { UserProfile } from '../../models';
 
+interface SkillOption {
+  code: string;
+  label: string;
+}
+
 @Entry
 @Component
 struct VolunteerProfileEditPage {
+  private skillOptions: SkillOption[] = [
+    { code: 'medical', label: '就医协助' },
+    { code: 'companion', label: '出行协助' },
+    { code: 'shopping', label: '生活帮扶' },
+    { code: 'repair', label: '维修协助' },
+    { code: 'emergency', label: '紧急救援' },
+    { code: 'other', label: '其他服务' }
+  ];
   @State userName: string = '';
   @State phone: string = '';
   @State address: string = '';
+  @State selectedSkills: string[] = [];
   @State emergencyContact: string = '';
   @State emergencyPhone: string = '';
   @State isLoading: boolean = false;
@@ -50,6 +64,11 @@ struct VolunteerProfileEditPage {
       this.address = profile.address ? profile.address : '';
       this.emergencyContact = profile.emergencyContact ? profile.emergencyContact : '';
       this.emergencyPhone = profile.emergencyPhone ? profile.emergencyPhone : '';
+      try {
+        this.selectedSkills = await UserApi.getMyVolunteerSkills();
+      } catch (_) {
+        this.selectedSkills = profile.skills ? profile.skills : [];
+      }
     } catch (err) {
       const error = err as Error;
       if (this.shouldRedirectToLogin(error)) {
@@ -92,6 +111,8 @@ struct VolunteerProfileEditPage {
         emergencyContact: trimmedEmergencyContact,
         emergencyPhone: trimmedEmergencyPhone
       });
+      const savedSkills = await UserApi.updateMyVolunteerSkills(this.selectedSkills);
+      updatedProfile.skills = savedSkills;
       await StorageUtil.set('user', updatedProfile);
       promptAction.showToast({ message: '\u5df2\u4fdd\u5b58', duration: 1500 });
       router.back();
@@ -117,6 +138,22 @@ struct VolunteerProfileEditPage {
       .fontColor(this.highContrastEnabled ? '#000000' : '#374151')
       .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Medium)
       .alignSelf(ItemAlign.Start)
+  }
+
+  private toggleSkill(code: string): void {
+    const next: string[] = [];
+    let exists = false;
+    for (let i = 0; i < this.selectedSkills.length; i++) {
+      if (this.selectedSkills[i] === code) {
+        exists = true;
+      } else {
+        next.push(this.selectedSkills[i]);
+      }
+    }
+    if (!exists) {
+      next.push(code);
+    }
+    this.selectedSkills = next;
   }
 
   build() {
@@ -205,6 +242,38 @@ struct VolunteerProfileEditPage {
                 .onChange((value: string) => {
                   this.address = value;
                 })
+            }
+            .width('100%')
+
+            Column({ space: 10 }) {
+              this.FormLabel('志愿服务技能')
+              Flex({ wrap: FlexWrap.Wrap }) {
+                ForEach(this.skillOptions, (item: SkillOption) => {
+                  Text(item.label)
+                    .fontSize(this.largeFontEnabled ? 16 : 13)
+                    .fontColor(this.highContrastEnabled ? '#000000'
+                      : (this.selectedSkills.indexOf(item.code) >= 0 ? '#ffffff' : '#4b5563'))
+                    .padding({
+                      left: 14,
+                      right: 14,
+                      top: 10,
+                      bottom: 10
+                    })
+                    .margin({ right: 8, bottom: 8 })
+                    .backgroundColor(this.highContrastEnabled ? '#ffff00'
+                      : (this.selectedSkills.indexOf(item.code) >= 0 ? '#2563eb' : '#f3f4f6'))
+                    .borderRadius(999)
+                    .border({
+                      width: this.highContrastEnabled ? 3 : 1,
+                      color: this.highContrastEnabled ? '#000000'
+                        : (this.selectedSkills.indexOf(item.code) >= 0 ? '#2563eb' : '#d1d5db')
+                    })
+                    .onClick(() => {
+                      this.toggleSkill(item.code);
+                    })
+                }, (item: SkillOption) => item.code)
+              }
+              .width('100%')
             }
             .width('100%')
 

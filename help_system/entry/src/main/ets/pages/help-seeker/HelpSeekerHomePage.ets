@@ -5,6 +5,7 @@ import { SeekerPersonalCenterPane } from './SeekerPersonalCenterPane';
 import { DateUtil } from '../../utils/DateUtil';
 import { StorageUtil } from '../../utils/StorageUtil';
 import { ElderHighContrastTheme } from '../../utils/AccessibilityTheme';
+import { DefaultHomeLocationSyncDeps, syncHomeLocation } from '../../utils/HomeLocationSyncUtil';
 import type { HelpRequest, UserProfile } from '../../models';
 
 /** 与 ArkUI TouchType 枚举取值一致（当前 SDK 未从 @kit.ArkUI 导出 TouchType） */
@@ -159,6 +160,15 @@ struct HelpSeekerHomePage {
           : '未设置地址，可在个人中心补充';
       } else {
         this.locationDisplay = '未登录或暂无地址';
+      }
+
+      if (userString) {
+        const syncUser: UserProfile = JSON.parse(userString) as UserProfile;
+        const locationResult = await syncHomeLocation(syncUser, new DefaultHomeLocationSyncDeps());
+        this.locationDisplay = locationResult.locationDisplay;
+        if (locationResult.updatedUser) {
+          await StorageUtil.saveString('user', JSON.stringify(locationResult.updatedUser));
+        }
       }
 
       try {

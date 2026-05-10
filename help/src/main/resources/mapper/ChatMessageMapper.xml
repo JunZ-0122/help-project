@@ -28,7 +28,7 @@
         )
         VALUES (
             #{requestId}, #{senderId}, #{senderName}, #{senderAvatar}, #{receiverId}, #{text},
-            #{type}, #{isRead}, NOW()
+            #{type}, #{isRead}, #{createdAt}
         )
     </insert>
 

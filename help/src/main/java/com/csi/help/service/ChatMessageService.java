@@ -10,6 +10,7 @@ import com.csi.help.websocket.ChatWebSocketHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,6 +43,9 @@ public class ChatMessageService {
             message.setType("text");
         }
 
+        if (message.getCreatedAt() == null) {
+            message.setCreatedAt(LocalDateTime.now());
+        }
         message.setIsRead(false);
         chatMessageMapper.insert(message);
         chatWebSocketHandler.sendChatMessage(message);

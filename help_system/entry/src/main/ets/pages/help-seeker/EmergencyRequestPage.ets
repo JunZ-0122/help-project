@@ -2,7 +2,11 @@ import router from '@ohos.router';
 import { promptAction } from '@kit.ArkUI';
 import { NavBackButton } from '../../components/NavBackButton';
 import { EmergencyApi, GeocodeApi, type CreateEmergencyRequestPayload } from '../../services/ApiService';
-import { getCurrentPosition, requestLocationPermission } from '../../utils/LocationUtil';
+import {
+  getLastLocationFailureReason,
+  requestLocationPermission,
+  retryGetCurrentPosition
+} from '../../utils/LocationUtil';
 import { StorageUtil } from '../../utils/StorageUtil';
 import { ElderHighContrastTheme } from '../../utils/AccessibilityTheme';
 import type { UserProfile } from '../../models/User';
@@ -83,11 +87,14 @@ struct EmergencyRequestPage {
         });
         return;
       }
-      const pos = await getCurrentPosition();
+      const pos = await retryGetCurrentPosition();
       if (!pos) {
+        const reason = getLastLocationFailureReason();
         promptAction.showToast({
-          message: '\u672a\u6536\u5230\u5b9a\u4f4d\uff0c\u53ef\u4e0b\u65b9\u586b\u5199\u6216\u4f7f\u7528\u6d4b\u8bd5\u586b\u5145',
-          duration: 3000
+          message: reason && reason.length > 0
+            ? `\u672a\u6536\u5230\u5b9a\u4f4d\uff08${reason}\uff09`
+            : '\u672a\u6536\u5230\u5b9a\u4f4d\u3002\u6a21\u62df\u5668\u8bf7\u5728\u300cGPS\u6a21\u62df\u300d\u8bbe\u7f6e\u7ecf\u7eac\u5ea6\u5e76\u70b9\u51fb\u5e94\u7528\uff0c\u518d\u70b9\u91cd\u65b0\u5b9a\u4f4d\uff1b\u6216\u5148\u4f7f\u7528\u6d4b\u8bd5\u586b\u5145\u5730\u5740\u3002',
+          duration: reason && reason.length > 0 ? 5000 : 4000
         });
         return;
       }
@@ -379,7 +386,9 @@ struct EmergencyRequestPage {
 
                 Column({ space: 6 }) {
                   Row({ space: 8 }) {
-                    Text(this.isLocating ? '\u6b63\u5728\u83b7\u53d6\u4f4d\u7f6e...' : '\u5df2\u83b7\u53d6\u5f53\u524d\u4f4d\u7f6e')
+                    Text(this.isLocating
+                      ? '\u6b63\u5728\u83b7\u53d6\u4f4d\u7f6e...'
+                      : (this.locationReady ? '\u5df2\u83b7\u53d6\u5f53\u524d\u4f4d\u7f6e' : '\u6682\u672a\u83b7\u53d6\u5f53\u524d\u4f4d\u7f6e'))
                       .fontSize(this.largeFontEnabled ? 16 : 14)
                       .fontWeight(FontWeight.Medium)
                       .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#1e40af')

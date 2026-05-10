@@ -18,6 +18,7 @@ export interface UserProfile extends User {
   age?: number;
   gender?: 'male' | 'female' | 'other';
   address?: string;
+  skills?: string[];
   emergencyContact?: string;
   emergencyPhone?: string;
   disabilities?: string[];

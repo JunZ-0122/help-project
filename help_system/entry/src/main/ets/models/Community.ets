@@ -34,6 +34,8 @@ export interface VolunteerInfo {
   skills: string[];
   location?: string;
   distance?: number;
+  matchScore?: number;
+  skillMatched?: boolean;
 }
 
 /**

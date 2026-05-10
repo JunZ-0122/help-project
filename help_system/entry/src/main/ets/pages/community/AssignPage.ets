@@ -13,6 +13,8 @@ interface VolunteerItem {
   avatar: string;
   location: string;
   distanceKm?: number;
+  matchScore?: number;
+  skillMatched?: boolean;
 }
 
 /** 设为 false 可关闭：仅用真实接口数据 */
@@ -175,6 +177,12 @@ struct AssignPage {
     if (volunteer.distance !== undefined && volunteer.distance !== null) {
       item.distanceKm = volunteer.distance;
     }
+    if (volunteer.matchScore !== undefined && volunteer.matchScore !== null) {
+      item.matchScore = volunteer.matchScore;
+    }
+    if (volunteer.skillMatched !== undefined && volunteer.skillMatched !== null) {
+      item.skillMatched = volunteer.skillMatched;
+    }
     return item;
   }
 
@@ -267,6 +275,12 @@ struct AssignPage {
             Text(`\u8ddd\u79bb ${volunteer.distanceKm.toFixed(1)} km`)
               .fontSize(this.largeFontEnabled ? 15 : 12)
               .fontColor(this.highContrastEnabled ? '#000000' : '#059669')
+          }
+
+          if (volunteer.matchScore !== undefined && volunteer.matchScore !== null) {
+            Text(`匹配分 ${volunteer.matchScore}${volunteer.skillMatched === false ? ' · 技能待确认' : ''}`)
+              .fontSize(this.largeFontEnabled ? 15 : 12)
+              .fontColor(this.highContrastEnabled ? '#000000' : '#7c3aed')
           }
         }
         .alignItems(HorizontalAlign.Start)
@@ -492,5 +506,4 @@ struct AssignPage {
     .height('100%')
   }
 }
-
 
