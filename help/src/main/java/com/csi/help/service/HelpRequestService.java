@@ -311,7 +311,7 @@ public class HelpRequestService {
             vo.setBanner(b);
         }
 
-        if (r.getVolunteerId() != null
+        if (hasVolunteerContext(r, order)
                 && ("assigned".equals(st) || "in-progress".equals(st) || "completed".equals(st))) {
             vo.setVolunteer(buildSeekerVolunteer(r, order));
         }
@@ -379,11 +379,26 @@ public class HelpRequestService {
         DEV_FLOW_EXECUTOR.schedule(() -> helpRequestMapper.updateStatus(requestId, "completed"), 14, TimeUnit.SECONDS);
     }
 
+    private boolean hasVolunteerContext(HelpRequest request, VolunteerOrder order) {
+        return (request.getVolunteerId() != null && !request.getVolunteerId().isBlank())
+                || (order != null && order.getVolunteerId() != null && !order.getVolunteerId().isBlank());
+    }
+
     private SeekerVolunteerVo buildSeekerVolunteer(HelpRequest r, VolunteerOrder order) {
-        User u = userMapper.findById(r.getVolunteerId());
+        String volunteerId = r.getVolunteerId();
+        if ((volunteerId == null || volunteerId.isBlank()) && order != null) {
+            volunteerId = order.getVolunteerId();
+        }
+
+        String volunteerName = r.getVolunteerName();
+        if ((volunteerName == null || volunteerName.isBlank()) && order != null) {
+            volunteerName = order.getVolunteerName();
+        }
+
+        User u = volunteerId != null && !volunteerId.isBlank() ? userMapper.findById(volunteerId) : null;
         SeekerVolunteerVo v = new SeekerVolunteerVo();
-        v.setId(r.getVolunteerId());
-        v.setName(r.getVolunteerName() != null ? r.getVolunteerName() : "\u5fd7\u613f\u8005");
+        v.setId(volunteerId);
+        v.setName(volunteerName != null && !volunteerName.isBlank() ? volunteerName : "\u5fd7\u613f\u8005");
         if (u != null) {
             if (u.getName() != null && !u.getName().isEmpty()) {
                 v.setName(u.getName());

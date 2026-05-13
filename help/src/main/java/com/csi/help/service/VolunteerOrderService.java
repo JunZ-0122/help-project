@@ -71,6 +71,7 @@ public class VolunteerOrderService {
         order.setAcceptedAt(LocalDateTime.now());
 
         volunteerOrderMapper.insert(order);
+        helpRequestMapper.assignVolunteer(requestId, volunteerId, volunteer.getName());
         helpRequestMapper.updateStatus(requestId, "assigned");
 
         return order;
