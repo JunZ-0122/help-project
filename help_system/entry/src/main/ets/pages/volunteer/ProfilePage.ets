@@ -6,6 +6,7 @@ import { AuthService } from '../../services/AuthService';
 import { UserApi, VolunteerApi } from '../../services/ApiService';
 import { StorageUtil } from '../../utils/StorageUtil';
 import { AccessibilitySettingsBlock } from '../../components/AccessibilitySettingsBlock';
+import { ElderHighContrastTheme } from '../../utils/AccessibilityTheme';
 import type { UserProfile } from '../../models';
 
 interface MenuItem {
@@ -84,6 +85,38 @@ struct ProfilePage {
       { value: this.satisfactionDisplay, label: '\u6ee1\u610f\u5ea6', color: '#2563eb' },
       { value: this.serviceHoursDisplay, label: '\u670d\u52a1\u65f6\u957f', color: '#f59e0b' }
     ];
+  }
+
+  private hcRolePalette() {
+    return ElderHighContrastTheme.getRolePalette('volunteer');
+  }
+
+  private hcPageBg(): string {
+    return this.highContrastEnabled ? ElderHighContrastTheme.pageBg : '#f9fafb';
+  }
+
+  private hcCardBg(): string {
+    return this.highContrastEnabled ? ElderHighContrastTheme.surface : '#ffffff';
+  }
+
+  private hcHeaderBg(): string {
+    return this.highContrastEnabled ? ElderHighContrastTheme.headerSurface : '#ffffff';
+  }
+
+  private hcTextMain(): string {
+    return this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827';
+  }
+
+  private hcTextMuted(): string {
+    return this.highContrastEnabled ? ElderHighContrastTheme.textSecondary : '#6b7280';
+  }
+
+  private hcCardBorder(): BorderOptions | undefined {
+    return this.highContrastEnabled ? ElderHighContrastTheme.cardBorder() : undefined;
+  }
+
+  private hcSubtleBorder(): BorderOptions | undefined {
+    return this.highContrastEnabled ? ElderHighContrastTheme.subtleBorder() : undefined;
   }
 
   private formatHours(h: number): string {
@@ -207,7 +240,7 @@ struct ProfilePage {
           Text(item.icon)
             .fontSize(this.largeFontEnabled ? 24 : 20)
             .fontWeight(FontWeight.Bold)
-            .fontColor(this.highContrastEnabled ? '#000000' : '#10b981')
+            .fontColor(this.highContrastEnabled ? this.hcRolePalette().iconAccent : '#10b981')
         }
         .width(44)
         .height(44)
@@ -215,28 +248,28 @@ struct ProfilePage {
           angle: 135,
           colors: [[0xecfdf5, 0.0], [0xd1fae5, 1.0]]
         })
-        .backgroundColor(this.highContrastEnabled ? '#ffff00' : undefined)
+        .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.iconBoxBg : undefined)
         .borderRadius(12)
-        .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
+        .border(this.hcSubtleBorder())
         .justifyContent(FlexAlign.Center)
 
         Text(item.label)
           .fontSize(this.largeFontEnabled ? 19 : 15)
-          .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
+          .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#1a1a1a')
           .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Medium)
           .layoutWeight(1)
           .textAlign(TextAlign.Start)
 
         Text('›')
           .fontSize(this.largeFontEnabled ? 32 : 28)
-          .fontColor(this.highContrastEnabled ? '#000000' : '#cbd5e1')
+          .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textTertiary : '#cbd5e1')
           .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Normal)
       }
       .width('100%')
       .padding({ left: 16, right: 16, top: 14, bottom: 14 })
     }
     .width('100%')
-    .backgroundColor('#ffffff')
+    .backgroundColor(this.hcCardBg())
     .borderRadius(0)
     .onClick(() => {
       this.handleMenuClick(item);
@@ -251,22 +284,22 @@ struct ProfilePage {
         Text('\u4e2a\u4eba\u4e2d\u5fc3')
           .fontSize(this.largeFontEnabled ? 22 : 18)
           .fontWeight(FontWeight.Medium)
-          .fontColor(this.highContrastEnabled ? '#000000' : '#1a1a1a')
+          .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#1a1a1a')
           .layoutWeight(1)
       }
       .width('100%')
       .padding(12)
-      .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#ffffff')
+      .backgroundColor(this.hcHeaderBg())
       .border({
-        width: { bottom: this.highContrastEnabled ? 3 : 1 },
-        color: this.highContrastEnabled ? '#000000' : '#e5e7eb'
+        width: { bottom: this.highContrastEnabled ? 2 : 1 },
+        color: this.highContrastEnabled ? ElderHighContrastTheme.borderStrong : '#e5e7eb'
       })
 
       if (this.isLoading) {
         Column({ space: 12 }) {
           Text('\u52a0\u8f7d\u4e2a\u4eba\u8d44\u6599\u4e2d...')
             .fontSize(this.largeFontEnabled ? 20 : 16)
-            .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
+            .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textSecondary : '#6b7280')
         }
         .layoutWeight(1)
         .width('100%')
@@ -291,9 +324,10 @@ struct ProfilePage {
                     ? [[0x000000, 0.0], [0x333333, 1.0]]
                     : [[0x34d399, 0.0], [0x10b981, 0.5], [0x059669, 1.0]]
                 })
+                .backgroundColor(this.highContrastEnabled ? this.hcRolePalette().avatarBg : undefined)
                 .borderRadius(44)
                 .justifyContent(FlexAlign.Center)
-                .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : { width: 4, color: '#ffffff' })
+                .border(this.highContrastEnabled ? ElderHighContrastTheme.cardBorder() : { width: 4, color: '#ffffff' })
                 .shadow(this.highContrastEnabled ? undefined : {
                   radius: 12,
                   color: '#10b98120',
@@ -304,24 +338,24 @@ struct ProfilePage {
                 Column({ space: 6 }) {
                   Text(this.userName ? this.userName : '\u672a\u8bbe\u7f6e\u59d3\u540d')
                     .fontSize(this.largeFontEnabled ? 26 : 22)
-                    .fontColor(this.highContrastEnabled ? '#000000' : '#111827')
+                    .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
                     .fontWeight(FontWeight.Bold)
 
                   Text(this.getMaskedPhone())
                     .fontSize(this.largeFontEnabled ? 17 : 14)
-                    .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
+                    .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textSecondary : '#6b7280')
                     .fontWeight(this.highContrastEnabled ? FontWeight.Medium : FontWeight.Normal)
 
                   Row() {
                     Text('\u5fd7\u613f\u8005')
                       .fontSize(this.largeFontEnabled ? 15 : 12)
-                      .fontColor(this.highContrastEnabled ? '#000000' : '#065f46')
+                      .fontColor(this.highContrastEnabled ? this.hcRolePalette().tagText : '#065f46')
                       .fontWeight(FontWeight.Medium)
                   }
                   .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-                  .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#d1fae5')
+                  .backgroundColor(this.highContrastEnabled ? this.hcRolePalette().tagBg : '#d1fae5')
                   .borderRadius(10)
-                  .border(this.highContrastEnabled ? { width: 2, color: '#000000' } : undefined)
+                  .border(this.hcSubtleBorder())
                   .margin({ top: 2 })
                 }
                 .alignItems(HorizontalAlign.Start)
@@ -334,10 +368,10 @@ struct ProfilePage {
               angle: 180,
               colors: [[0xffffff, 0.0], [0xf0fdf4, 1.0]]
             })
-            .backgroundColor(this.highContrastEnabled ? '#ffffff' : undefined)
+            .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.surface : undefined)
             .borderRadius(16)
             .margin({ top: 4 })
-            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
+            .border(this.hcCardBorder())
             .shadow(this.highContrastEnabled ? undefined : {
               radius: 8,
               color: '#0f00001a',
@@ -353,18 +387,18 @@ struct ProfilePage {
                 Column({ space: 8 }) {
                   Text(item.value)
                     .fontSize(this.largeFontEnabled ? 30 : 26)
-                    .fontColor(this.highContrastEnabled ? '#000000' : item.color)
+                    .fontColor(this.highContrastEnabled ? this.hcRolePalette().statAccent : item.color)
                     .fontWeight(FontWeight.Bold)
                   Text(item.label)
                     .fontSize(this.largeFontEnabled ? 15 : 12)
-                    .fontColor(this.highContrastEnabled ? '#000000' : '#6b7280')
+                    .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textSecondary : '#6b7280')
                     .fontWeight(this.highContrastEnabled ? FontWeight.Medium : FontWeight.Normal)
                 }
                 .layoutWeight(1)
                 .padding({ top: 18, bottom: 18, left: 12, right: 12 })
-                .backgroundColor('#ffffff')
+                .backgroundColor(this.hcCardBg())
                 .borderRadius(14)
-                .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
+                .border(this.hcCardBorder())
                 .shadow(this.highContrastEnabled ? undefined : {
                   radius: 6,
                   color: '#0f00001a',
@@ -381,16 +415,16 @@ struct ProfilePage {
                   this.MenuItemBuilder(item)
                   if (index < this.menuItems.length - 1) {
                     Divider()
-                      .color(this.highContrastEnabled ? '#000000' : '#f3f4f6')
-                      .strokeWidth(this.highContrastEnabled ? 2 : 1)
+                      .color(this.highContrastEnabled ? ElderHighContrastTheme.divider : '#f3f4f6')
+                      .strokeWidth(1)
                   }
                 }
               }, (item: MenuItem) => item.id)
             }
             .width('100%')
-            .backgroundColor('#ffffff')
+            .backgroundColor(this.hcCardBg())
             .borderRadius(16)
-            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
+            .border(this.hcCardBorder())
             .shadow(this.highContrastEnabled ? undefined : {
               radius: 4,
               color: '#0f00000a',
@@ -406,18 +440,18 @@ struct ProfilePage {
               Row({ space: 10 }) {
                 Text('\u21AA')
                   .fontSize(this.largeFontEnabled ? 22 : 18)
-                  .fontColor(this.highContrastEnabled ? '#000000' : '#dc2626')
+                  .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.accentDanger : '#dc2626')
                 Text(this.isLoggingOut ? '\u9000\u51fa\u4e2d...' : '\u9000\u51fa\u767b\u5f55')
                   .fontSize(this.largeFontEnabled ? 18 : 16)
-                  .fontColor(this.highContrastEnabled ? '#000000' : '#dc2626')
+                  .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.accentDanger : '#dc2626')
                   .fontWeight(this.highContrastEnabled ? FontWeight.Bold : FontWeight.Medium)
               }
             }
             .width('100%')
             .height(56)
-            .backgroundColor('#ffffff')
+            .backgroundColor(this.hcCardBg())
             .borderRadius(16)
-            .border(this.highContrastEnabled ? { width: 3, color: '#000000' } : undefined)
+            .border(this.hcCardBorder())
             .enabled(!this.isLoggingOut)
             .onClick(() => {
               this.handleLogout();
@@ -431,11 +465,11 @@ struct ProfilePage {
         .layoutWeight(1)
         .align(Alignment.TopStart)
         .scrollBar(BarState.Off)
-        .backgroundColor(this.highContrastEnabled ? '#ffff00' : '#f9fafb')
+        .backgroundColor(this.hcPageBg())
       }
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(this.highContrastEnabled ? '#ffffff' : '#f9fafb')
+    .backgroundColor(this.hcPageBg())
   }
 }

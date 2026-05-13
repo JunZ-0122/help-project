@@ -685,9 +685,12 @@ struct HelpSeekerHomePage {
                 Row().height(20)
               }
               .width('100%')
+              .justifyContent(FlexAlign.Start)
+              .alignItems(HorizontalAlign.Start)
               .padding(16)
             }
             .layoutWeight(1)
+            .align(Alignment.TopStart)
             .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.pageBg : '#f9fafb')
           } else {
             Column({ space: 16 }) {

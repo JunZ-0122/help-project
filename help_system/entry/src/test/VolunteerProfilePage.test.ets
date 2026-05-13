@@ -1,6 +1,7 @@
 import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
 import { AccessibilityManager, STORAGE_KEYS } from '../main/ets/utils/AccessibilityManager';
 import { StorageUtil } from '../main/ets/utils/StorageUtil';
+import { ElderHighContrastTheme } from '../main/ets/utils/AccessibilityTheme';
 
 /**
  * 志愿者 ProfilePage 无障碍设置面板测试
@@ -92,11 +93,11 @@ export default function volunteerProfilePageTest() {
         expect(settings.highContrastEnabled).assertEqual(true);
         
         // 在实际的 UI 组件中，这会导致：
-        // - 背景色变为 #ffff00（黄色）
-        // - 文字颜色变为 #000000（黑色）
-        // - 边框宽度变为 3px
-        // - 字体加粗
-        // 等等
+        // - 页面背景切换到暖白高对比底色
+        // - 内容卡片切换到白色表面
+        // - 文本使用深灰主文案色
+        // - 描边收敛为统一高对比 token
+        // - 角色强调色改用绿色系
       });
 
       it('should maintain settings consistency across page navigation', 0, async () => {
@@ -232,18 +233,18 @@ export default function volunteerProfilePageTest() {
         // 场景 1：高对比度禁用
         await manager.updateHighContrast(false);
         let settings = manager.getSettings();
-        let backgroundColor = settings.highContrastEnabled ? '#ffff00' : '#f3f4f6';
-        let textColor = settings.highContrastEnabled ? '#000000' : '#1a1a1a';
+        let backgroundColor = settings.highContrastEnabled ? ElderHighContrastTheme.pageBg : '#f3f4f6';
+        let textColor = settings.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#1a1a1a';
         expect(backgroundColor).assertEqual('#f3f4f6');
         expect(textColor).assertEqual('#1a1a1a');
         
         // 场景 2：高对比度启用
         await manager.updateHighContrast(true);
         settings = manager.getSettings();
-        backgroundColor = settings.highContrastEnabled ? '#ffff00' : '#f3f4f6';
-        textColor = settings.highContrastEnabled ? '#000000' : '#1a1a1a';
-        expect(backgroundColor).assertEqual('#ffff00');
-        expect(textColor).assertEqual('#000000');
+        backgroundColor = settings.highContrastEnabled ? ElderHighContrastTheme.pageBg : '#f3f4f6';
+        textColor = settings.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#1a1a1a';
+        expect(backgroundColor).assertEqual('#f2ebe0');
+        expect(textColor).assertEqual('#1a1a1a');
       });
     });
   });

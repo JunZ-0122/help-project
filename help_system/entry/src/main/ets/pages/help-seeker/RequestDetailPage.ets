@@ -11,6 +11,13 @@ interface RequestDetailRouteParams {
   id?: string;
 }
 
+interface RequestTypeBadgeStyle {
+  label: string;
+  bg: string;
+  text: string;
+  border: string;
+}
+
 @Entry
 @Component
 struct RequestDetailPage {
@@ -320,6 +327,40 @@ struct RequestDetailPage {
     return index === d.timeline.length - 1;
   }
 
+  private getRequestTypeBadgeStyle(type: string): RequestTypeBadgeStyle {
+    if (this.highContrastEnabled) {
+      switch (type) {
+        case 'medical':
+          return { label: '\u5c31\u533b\u534f\u52a9', bg: '#ffffff', text: '#000000', border: '#000000' };
+        case 'shopping':
+          return { label: '\u751f\u6d3b\u5e2e\u6276', bg: '#ffffff', text: '#000000', border: '#000000' };
+        case 'repair':
+          return { label: '\u7ef4\u4fee\u5e2e\u52a9', bg: '#ffffff', text: '#000000', border: '#000000' };
+        case 'companion':
+          return { label: '\u51fa\u884c\u534f\u52a9', bg: '#ffffff', text: '#000000', border: '#000000' };
+        case 'emergency':
+          return { label: '\u7d27\u6025\u6c42\u52a9', bg: '#ffffff', text: '#000000', border: '#000000' };
+        default:
+          return { label: '\u5176\u4ed6\u5e2e\u52a9', bg: '#ffffff', text: '#000000', border: '#000000' };
+      }
+    }
+
+    switch (type) {
+      case 'medical':
+        return { label: '\u5c31\u533b\u534f\u52a9', bg: '#f3e8ff', text: '#7c3aed', border: '#d8b4fe' };
+      case 'shopping':
+        return { label: '\u751f\u6d3b\u5e2e\u6276', bg: '#dcfce7', text: '#15803d', border: '#86efac' };
+      case 'repair':
+        return { label: '\u7ef4\u4fee\u5e2e\u52a9', bg: '#ffedd5', text: '#c2410c', border: '#fdba74' };
+      case 'companion':
+        return { label: '\u51fa\u884c\u534f\u52a9', bg: '#dbeafe', text: '#1d4ed8', border: '#93c5fd' };
+      case 'emergency':
+        return { label: '\u7d27\u6025\u6c42\u52a9', bg: '#fee2e2', text: '#dc2626', border: '#fca5a5' };
+      default:
+        return { label: '\u5176\u4ed6\u5e2e\u52a9', bg: '#f3f4f6', text: '#4b5563', border: '#d1d5db' };
+    }
+  }
+
   @Builder
   StatusBadge() {
     if (this.detail) {
@@ -485,9 +526,18 @@ struct RequestDetailPage {
           Text('\u7c7b\u578b')
             .fontSize(this.largeFontEnabled ? 15 : 12)
             .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#6b7280')
-          Text(this.detail.request.type)
-            .fontSize(this.largeFontEnabled ? 16 : 13)
-            .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.textPrimary : '#111827')
+
+          Text(this.getRequestTypeBadgeStyle(this.detail.request.type).label)
+            .fontSize(this.largeFontEnabled ? 15 : 12)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.getRequestTypeBadgeStyle(this.detail.request.type).text)
+            .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+            .backgroundColor(this.getRequestTypeBadgeStyle(this.detail.request.type).bg)
+            .borderRadius(999)
+            .border({
+              width: 1,
+              color: this.getRequestTypeBadgeStyle(this.detail.request.type).border
+            })
         }
 
         Row({ space: 8 }) {
@@ -678,9 +728,12 @@ struct RequestDetailPage {
             this.ProgressCard()
           }
           .width('100%')
+          .justifyContent(FlexAlign.Start)
+          .alignItems(HorizontalAlign.Start)
           .padding({ left: 12, right: 12, top: 0, bottom: 20 })
         }
         .layoutWeight(1)
+        .align(Alignment.TopStart)
         .scrollBar(BarState.Auto)
         .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.pageBg : '#f5f5f5')
       }

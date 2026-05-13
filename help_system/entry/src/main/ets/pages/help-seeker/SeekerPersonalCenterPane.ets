@@ -69,6 +69,10 @@ export struct SeekerPersonalCenterPane {
     return this.highContrastEnabled ? ElderHighContrastTheme.iconBoxBg : '#f3f4f6';
   }
 
+  private hcRolePalette() {
+    return ElderHighContrastTheme.getRolePalette('help-seeker');
+  }
+
   private hcDivider(): string {
     return this.highContrastEnabled ? ElderHighContrastTheme.divider : '#f3f4f6';
   }
@@ -152,6 +156,14 @@ export struct SeekerPersonalCenterPane {
     });
   }
 
+  private openProfileEdit(): void {
+    router.pushUrl({
+      url: 'pages/help-seeker/HelpSeekerProfileEditPage'
+    }).catch((err: Error) => {
+      console.error('navigation failed:', err);
+    });
+  }
+
   handleLogout() {
     if (this.isLoggingOut) {
       return;
@@ -201,6 +213,7 @@ export struct SeekerPersonalCenterPane {
           Row() {
             Text(item.icon)
               .fontSize(this.largeFontEnabled ? 20 : 17)
+              .fontColor(this.highContrastEnabled ? this.hcRolePalette().iconAccent : undefined)
           }
           .width(36)
           .height(36)
@@ -249,7 +262,7 @@ export struct SeekerPersonalCenterPane {
               Row() {
                 Text(this.getAvatarText())
                   .fontSize(this.largeFontEnabled ? 34 : 30)
-                  .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.avatarText : '#ffffff')
+                  .fontColor(this.highContrastEnabled ? this.hcRolePalette().avatarText : '#ffffff')
                   .fontWeight(FontWeight.Bold)
               }
               .width(84)
@@ -258,7 +271,7 @@ export struct SeekerPersonalCenterPane {
                 angle: 135,
                 colors: [[0x60a5fa, 0.0], [0x3b82f6, 0.6], [0x2563eb, 1.0]]
               })
-              .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.avatarBg : undefined)
+              .backgroundColor(this.highContrastEnabled ? this.hcRolePalette().avatarBg : undefined)
               .borderRadius(42)
               .justifyContent(FlexAlign.Center)
               .border(this.highContrastEnabled ? { width: 2, color: ElderHighContrastTheme.borderStrong } : undefined)
@@ -273,9 +286,9 @@ export struct SeekerPersonalCenterPane {
                   .fontColor(this.hcTextMuted())
                 Text(this.userTag)
                   .fontSize(this.largeFontEnabled ? 15 : 12)
-                  .fontColor(this.highContrastEnabled ? ElderHighContrastTheme.tagText : '#1d4ed8')
+                  .fontColor(this.highContrastEnabled ? this.hcRolePalette().tagText : '#1d4ed8')
                   .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-                  .backgroundColor(this.highContrastEnabled ? ElderHighContrastTheme.tagBg : '#dbeafe')
+                  .backgroundColor(this.highContrastEnabled ? this.hcRolePalette().tagBg : '#dbeafe')
                   .borderRadius(99)
                   .border(this.highContrastEnabled ? ElderHighContrastTheme.subtleBorder() : undefined)
               }
@@ -287,6 +300,9 @@ export struct SeekerPersonalCenterPane {
             .backgroundColor(this.hcCardBg())
             .borderRadius(16)
             .border(this.hcCardBorder())
+            .onClick(() => {
+              this.openProfileEdit();
+            })
 
             Column() {
               ForEach(this.menuItems, (item: MenuItem, index: number) => {
