@@ -458,11 +458,13 @@ struct AssignPage {
               .width('100%')
             }
             .layoutWeight(1)
+            .align(Alignment.TopStart)
             .scrollBar(BarState.Off)
           }
         }
         .width('100%')
         .layoutWeight(1)
+        .align(Alignment.TopStart)
         .padding({
           left: this.largeFontEnabled ? 20 : 16,
           right: this.largeFontEnabled ? 20 : 16,
@@ -506,4 +508,3 @@ struct AssignPage {
     .height('100%')
   }
 }
-
