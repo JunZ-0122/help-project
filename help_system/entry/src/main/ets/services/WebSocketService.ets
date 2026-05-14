@@ -3,7 +3,9 @@ import type { ChatMessage, ChatReadReceiptEvent } from '../models';
 
 // 使用电脑IP地址，模拟器才能访问
 // 如果在真实设备上测试，需要确保设备和电脑在同一网络
-const WS_BASE_URL = 'ws://172.31.32.1:8080/ws/chat';
+const WS_BASE_URL = 'ws://119.3.237.136/ws/chat';
+
+
 
 type MessageHandler = (message: ChatMessage) => void;
 type ReadReceiptHandler = (event: ChatReadReceiptEvent) => void;

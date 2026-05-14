@@ -20,9 +20,9 @@ import { StorageUtil } from '../utils/StorageUtil';
 // 自动基址探测：优先 Previewer 本机地址，失败时回退到模拟器地址。
 // 如需真机调试，请把局域网地址放到第一个位置（例如 http://192.168.1.10:8080/api）。
 const API_BASE_URL_CANDIDATES: string[] = [
-  'http://127.0.0.1:8080/api',
-  'http://10.0.2.2:8080/api'
+  'http://119.3.237.136/api'
 ];
+
 const REQUEST_TIMEOUT_MS = 20000;
 const REQUEST_RETRY_COUNT = 1;
 
