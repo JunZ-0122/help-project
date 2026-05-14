@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,6 +27,16 @@ public class OpenApiConfig {
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")))
-                .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME));
+                .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
+                .addTagsItem(new Tag().name("认证"))
+                .addTagsItem(new Tag().name("求助请求"))
+                .addTagsItem(new Tag().name("紧急求助"))
+                .addTagsItem(new Tag().name("聊天"))
+                .addTagsItem(new Tag().name("社区管理"))
+                .addTagsItem(new Tag().name("用户"))
+                .addTagsItem(new Tag().name("志愿者概览"))
+                .addTagsItem(new Tag().name("志愿者订单"))
+                .addTagsItem(new Tag().name("评价"))
+                .addTagsItem(new Tag().name("地理编码"));
     }
 }
