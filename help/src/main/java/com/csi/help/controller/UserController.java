@@ -1,11 +1,15 @@
 package com.csi.help.controller;
 
 import com.csi.help.common.Result;
+import com.csi.help.config.OpenApiConfig;
 import com.csi.help.entity.User;
 import com.csi.help.entity.UserLocation;
 import com.csi.help.service.UserLocationService;
 import com.csi.help.service.UserService;
 import com.csi.help.service.VolunteerSkillService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "用户")
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
@@ -30,6 +36,7 @@ public class UserController {
     @Autowired
     private VolunteerSkillService volunteerSkillService;
 
+    @Operation(summary = "获取指定用户信息")
     @GetMapping("/{id}")
     public Result<User> getUser(@PathVariable String id) {
         User user = userService.getById(id);
@@ -40,6 +47,7 @@ public class UserController {
         return Result.success(user);
     }
 
+    @Operation(summary = "获取当前用户信息")
     @GetMapping("/me")
     public Result<User> getCurrentUser(@RequestAttribute("userId") String userId) {
         User user = userService.getById(userId);
@@ -50,6 +58,7 @@ public class UserController {
         return Result.success(user);
     }
 
+    @Operation(summary = "更新当前用户信息")
     @PutMapping("/me")
     public Result<User> updateUser(@RequestBody User user,
                                    @RequestAttribute("userId") String userId) {
@@ -67,6 +76,7 @@ public class UserController {
         return Result.success(updatedUser);
     }
 
+    @Operation(summary = "更新头像")
     @PutMapping("/me/avatar")
     public Result<Void> updateAvatar(@RequestBody Map<String, String> params,
                                      @RequestAttribute("userId") String userId) {
@@ -75,6 +85,7 @@ public class UserController {
         return Result.success();
     }
 
+    @Operation(summary = "设置角色")
     @PutMapping("/me/role")
     public Result<User> updateRole(@RequestBody Map<String, String> params,
                                    @RequestAttribute("userId") String userId) {
@@ -100,6 +111,7 @@ public class UserController {
         return Result.success(user);
     }
 
+    @Operation(summary = "切换角色")
     @PutMapping("/me/role/switch")
     public Result<User> switchRole(@RequestBody Map<String, String> params,
                                    @RequestAttribute("userId") String userId) {
@@ -125,6 +137,7 @@ public class UserController {
         return Result.success(user);
     }
 
+    @Operation(summary = "上报当前位置")
     @PostMapping("/me/location")
     public Result<UserLocation> reportLocation(@RequestBody Map<String, Object> body,
                                                @RequestAttribute("userId") String userId) {
@@ -144,6 +157,7 @@ public class UserController {
         return Result.success(loc);
     }
 
+    @Operation(summary = "获取我的位置")
     @GetMapping("/me/location")
     public Result<UserLocation> getMyLocation(@RequestAttribute("userId") String userId) {
         log.info("[User] 查询我的位置: userId={}", userId);
@@ -155,11 +169,13 @@ public class UserController {
         return Result.success(loc);
     }
 
+    @Operation(summary = "获取我的志愿技能")
     @GetMapping("/me/volunteer-skills")
     public Result<List<String>> getMyVolunteerSkills(@RequestAttribute("userId") String userId) {
         return Result.success(volunteerSkillService.getSkills(userId));
     }
 
+    @Operation(summary = "更新我的志愿技能")
     @PutMapping("/me/volunteer-skills")
     public Result<List<String>> updateMyVolunteerSkills(@RequestBody Map<String, Object> body,
                                                         @RequestAttribute("userId") String userId) {

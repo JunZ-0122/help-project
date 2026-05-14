@@ -2,6 +2,8 @@ package com.csi.help.controller;
 
 import com.csi.help.common.Result;
 import com.csi.help.service.AmapService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/geocode")
 @CrossOrigin
+@Tag(name = "地理编码")
 public class GeocodeController {
 
     private static final Logger log = LoggerFactory.getLogger(GeocodeController.class);
@@ -27,6 +30,7 @@ public class GeocodeController {
     /**
      * 逆地理：经纬度 → 格式化地址（用于「获取当前位置」自动填充）
      */
+    @Operation(summary = "经纬度逆地理编码")
     @GetMapping("/regeo")
     public Result<Map<String, String>> regeo(
             @RequestParam double latitude,

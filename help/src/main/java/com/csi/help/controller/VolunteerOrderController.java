@@ -2,8 +2,12 @@ package com.csi.help.controller;
 
 import com.csi.help.common.PageResult;
 import com.csi.help.common.Result;
+import com.csi.help.config.OpenApiConfig;
 import com.csi.help.entity.VolunteerOrder;
 import com.csi.help.service.VolunteerOrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +19,8 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/volunteer/orders")
+@Tag(name = "志愿者订单")
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class VolunteerOrderController {
 
     @Autowired
@@ -23,6 +29,7 @@ public class VolunteerOrderController {
     /**
      * 接受求助请求
      */
+    @Operation(summary = "志愿者接单")
     @PostMapping("/accept")
     public Result<VolunteerOrder> acceptOrder(@RequestBody Map<String, String> params,
                                                 @RequestAttribute("userId") String volunteerId) {
@@ -34,6 +41,7 @@ public class VolunteerOrderController {
     /**
      * \u83b7\u53d6\u6211\u7684\u8ba2\u5355\u5217\u8868\u3002\u4f20 page\u3001pageSize \u65f6\u8fd4\u56de\u5206\u9875\u7ed3\u6784\u4e0e\u524d\u7aef PageResponse \u4e00\u81f4
      */
+    @Operation(summary = "获取我的订单列表")
     @GetMapping("/my")
     public Result<?> getMyOrders(@RequestAttribute("userId") String volunteerId,
                                    @RequestParam(required = false) String status,
@@ -51,6 +59,7 @@ public class VolunteerOrderController {
     /**
      * 获取订单详情
      */
+    @Operation(summary = "获取订单详情")
     @GetMapping("/{id}")
     public Result<VolunteerOrder> getOrderDetail(@PathVariable String id) {
         VolunteerOrder order = volunteerOrderService.getById(id);
@@ -63,6 +72,7 @@ public class VolunteerOrderController {
     /**
      * 更新订单状态
      */
+    @Operation(summary = "更新订单状态")
     @PutMapping("/{id}/status")
     public Result<Void> updateStatus(@PathVariable String id,
                                        @RequestBody Map<String, String> params) {
@@ -74,6 +84,7 @@ public class VolunteerOrderController {
     /**
      * 完成订单
      */
+    @Operation(summary = "完成订单")
     @PostMapping("/{id}/complete")
     public Result<Void> complete(@PathVariable String id,
                                    @RequestBody Map<String, String> params) {
@@ -85,6 +96,7 @@ public class VolunteerOrderController {
     /**
      * 获取订单进度
      */
+    @Operation(summary = "获取订单进度")
     @GetMapping("/{id}/progress")
     public Result<VolunteerOrder> getProgress(@PathVariable String id) {
         VolunteerOrder order = volunteerOrderService.getById(id);

@@ -27,7 +27,11 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/auth/register",
                         "/api/auth/send-code",
                         "/api/auth/refresh-token",
-                        "/api/geocode/regeo"
+                        "/api/geocode/regeo",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**"
                 );
     }
     

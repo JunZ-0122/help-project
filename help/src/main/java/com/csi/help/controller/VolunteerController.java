@@ -2,12 +2,16 @@ package com.csi.help.controller;
 
 import com.csi.help.common.PageResult;
 import com.csi.help.common.Result;
+import com.csi.help.config.OpenApiConfig;
 import com.csi.help.dto.HelpRequestWithDistanceDto;
 import com.csi.help.dto.VolunteerStatisticsDto;
 import com.csi.help.entity.UserLocation;
 import com.csi.help.service.HelpRequestService;
 import com.csi.help.service.UserLocationService;
 import com.csi.help.service.VolunteerStatisticsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/volunteer")
 @CrossOrigin
+@Tag(name = "志愿者概览")
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class VolunteerController {
 
     private static final Logger log = LoggerFactory.getLogger(VolunteerController.class);
@@ -36,6 +42,7 @@ public class VolunteerController {
     /**
      * \u5fd7\u613f\u8005\u4e2a\u4eba\u4e2d\u5fc3\u7edf\u8ba1\uff1a\u670d\u52a1\u6b21\u6570\u3001\u6ee1\u610f\u5ea6\u3001\u670d\u52a1\u65f6\u957f
      */
+    @Operation(summary = "获取志愿者统计信息")
     @GetMapping("/statistics")
     public Result<VolunteerStatisticsDto> getStatistics(@RequestAttribute("userId") String userId) {
         VolunteerStatisticsDto dto = volunteerStatisticsService.getStatistics(userId);
@@ -46,6 +53,7 @@ public class VolunteerController {
      * 附近求助列表：按与当前用户（或传入经纬度）距离排序的待接单求助
      * 若不传 latitude/longitude，则使用当前用户最近上报的位置
      */
+    @Operation(summary = "获取附近求助列表")
     @GetMapping("/nearby-requests")
     public Result<PageResult<HelpRequestWithDistanceDto>> getNearbyRequests(
             @RequestParam(required = false) Double latitude,

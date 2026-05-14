@@ -2,10 +2,14 @@ package com.csi.help.controller;
 
 import com.csi.help.common.PageResult;
 import com.csi.help.common.Result;
+import com.csi.help.config.OpenApiConfig;
 import com.csi.help.dto.WatchRequestStatusDto;
 import com.csi.help.entity.HelpRequest;
 import com.csi.help.service.HelpRequestService;
 import com.csi.help.vo.SeekerRequestDetailVo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +22,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/requests")
 @CrossOrigin
+@Tag(name = "求助请求")
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class HelpRequestController {
 
     private static final Logger log = LoggerFactory.getLogger(HelpRequestController.class);
@@ -31,6 +37,7 @@ public class HelpRequestController {
     /**
      * 获取求助列表
      */
+    @Operation(summary = "获取求助列表")
     @GetMapping
     public Result<PageResult<HelpRequest>> getRequests(
             @RequestParam(required = false) String type,
@@ -51,6 +58,7 @@ public class HelpRequestController {
     /**
      * 创建求助
      */
+    @Operation(summary = "创建求助请求")
     @PostMapping
     public Result<HelpRequest> create(@RequestBody HelpRequest request,
                                        @RequestAttribute String userId,
@@ -69,6 +77,7 @@ public class HelpRequestController {
     /**
      * 手表端紧急求助状态查询（轮询用）
      */
+    @Operation(summary = "获取手表端求助状态")
     @GetMapping("/{id}/watch-status")
     public Result<WatchRequestStatusDto> getWatchStatus(@PathVariable String id,
                                                         @RequestAttribute String userId) {
@@ -89,6 +98,7 @@ public class HelpRequestController {
     /**
      * 开发测试：推进紧急求助状态（不影响正式接口）
      */
+    @Operation(summary = "推进开发调试流转")
     @PostMapping("/{id}/dev/flow-start")
     public Result<Void> startDevFlow(@PathVariable String id,
                                      @RequestAttribute String userId) {
@@ -103,6 +113,7 @@ public class HelpRequestController {
     /**
      * 求助者本人：详情页聚合（时间线、横幅、志愿者信息等）
      */
+    @Operation(summary = "获取求助者详情聚合视图")
     @GetMapping("/{id}/seeker-detail")
     public Result<SeekerRequestDetailVo> getSeekerDetail(@PathVariable String id,
                                                          @RequestAttribute String userId) {
@@ -123,6 +134,7 @@ public class HelpRequestController {
     /**
      * 获取求助详情
      */
+    @Operation(summary = "获取求助详情")
     @GetMapping("/{id}")
     public Result<HelpRequest> getById(@PathVariable String id) {
         try {
@@ -136,6 +148,7 @@ public class HelpRequestController {
     /**
      * 更新求助
      */
+    @Operation(summary = "更新求助请求")
     @PutMapping("/{id}")
     public Result<HelpRequest> update(@PathVariable String id, @RequestBody HelpRequest request) {
         try {
@@ -149,6 +162,7 @@ public class HelpRequestController {
     /**
      * 取消求助
      */
+    @Operation(summary = "取消求助请求")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable String id) {
         try {
@@ -162,6 +176,7 @@ public class HelpRequestController {
     /**
      * 获取我的求助列表
      */
+    @Operation(summary = "获取我的求助列表")
     @GetMapping("/my")
     public Result<PageResult<HelpRequest>> getMyRequests(
             @RequestAttribute String userId,
@@ -178,6 +193,7 @@ public class HelpRequestController {
     /**
      * 首页最近求助（按更新时间，默认 3 条）
      */
+    @Operation(summary = "获取我的最近求助")
     @GetMapping("/my/recent")
     public Result<List<HelpRequest>> getRecentMyRequests(
             @RequestAttribute String userId,

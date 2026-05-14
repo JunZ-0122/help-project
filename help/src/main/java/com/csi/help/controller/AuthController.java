@@ -1,11 +1,15 @@
 package com.csi.help.controller;
 
 import com.csi.help.common.Result;
+import com.csi.help.config.OpenApiConfig;
 import com.csi.help.dto.LoginRequest;
 import com.csi.help.dto.LoginResponse;
 import com.csi.help.dto.RegisterRequest;
 import com.csi.help.dto.SendCodeResponse;
 import com.csi.help.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.annotation.Validated;
@@ -23,6 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin
+@Tag(name = "认证")
 public class AuthController {
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
@@ -33,6 +38,7 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @Operation(summary = "用户登录")
     @PostMapping("/login")
     public Result<LoginResponse> login(@Validated @RequestBody LoginRequest request) {
         log.info("[Auth] login request: phone={}", request != null ? request.getPhone() : "");
@@ -47,6 +53,7 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "用户注册")
     @PostMapping("/register")
     public Result<LoginResponse> register(@Validated @RequestBody RegisterRequest request) {
         try {
@@ -57,6 +64,7 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "发送验证码")
     @PostMapping("/send-code")
     public Result<SendCodeResponse> sendCode(@RequestBody Map<String, String> request) {
         try {
@@ -69,6 +77,7 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "刷新访问令牌")
     @PostMapping("/refresh-token")
     public Result<LoginResponse> refreshToken(@RequestBody Map<String, String> request) {
         try {
@@ -80,6 +89,8 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "退出登录")
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
     @PostMapping("/logout")
     public Result<Void> logout() {
         return Result.success();

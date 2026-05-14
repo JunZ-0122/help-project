@@ -2,8 +2,12 @@ package com.csi.help.controller;
 
 import com.csi.help.common.PageResult;
 import com.csi.help.common.Result;
+import com.csi.help.config.OpenApiConfig;
 import com.csi.help.entity.ChatMessage;
 import com.csi.help.service.ChatMessageService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +19,8 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/chat")
+@Tag(name = "聊天")
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class  ChatMessageController {
 
     @Autowired
@@ -23,6 +29,7 @@ public class  ChatMessageController {
     /**
      * 发送消息
      */
+    @Operation(summary = "发送聊天消息")
     @PostMapping("/")
     public Result<ChatMessage> sendMessage(@RequestBody ChatMessage message,
                                              @RequestAttribute("userId") String senderId) {
@@ -35,6 +42,7 @@ public class  ChatMessageController {
     /**
      * 获取聊天历史
      */
+    @Operation(summary = "获取聊天历史")
     @GetMapping("/{requestId}")
     public Result<PageResult<ChatMessage>> getHistory(@PathVariable String requestId,
                                                         @RequestParam(defaultValue = "1") Integer page,
@@ -46,6 +54,7 @@ public class  ChatMessageController {
     /**
      * 标记消息为已读
      */
+    @Operation(summary = "批量标记消息已读")
     @PutMapping("/read")
     public Result<Void> markAsRead(@RequestBody Map<String, List<Long>> params) {
         List<Long> messageIds = params.get("messageIds");
@@ -56,6 +65,7 @@ public class  ChatMessageController {
     /**
      * 获取未读消息数量
      */
+    @Operation(summary = "获取未读消息数")
     @GetMapping("/{requestId}/unread")
     public Result<Long> countUnread(@PathVariable String requestId,
                                       @RequestAttribute("userId") String userId) {
